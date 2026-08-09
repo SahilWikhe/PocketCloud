@@ -65,6 +65,12 @@ Only create packages when they contain real code. The boundaries above guide the
 7. [MVP scope and roadmap](docs/06-mvp-and-roadmap.md)
 8. [Costs and operating assumptions](docs/07-costs-and-operations.md)
 9. [Decision log and TODOs](docs/08-decisions-and-todos.md)
+10. [Parallel development plan](docs/09-parallel-development.md)
+11. [MVP user stories](docs/10-user-stories.md)
+12. [Shared workstream contracts](docs/11-shared-contracts.md)
+13. [Codex session and handoff guide](docs/12-agent-handoffs.md)
+
+Codex and other AI coding agents must also follow the repository-wide instructions in [AGENTS.md](AGENTS.md).
 
 ## Initial customer experience
 
