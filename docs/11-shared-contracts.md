@@ -354,6 +354,30 @@ interface ArtifactStore {
 
 This prevents worker packages from depending on API routes, database tables, or storage-vendor SDKs.
 
+## Control-plane browser contracts
+
+Builder A also exposes versioned runtime schemas for the dashboard/API boundary in
+`packages/core/src/contracts/control-plane.ts`:
+
+```text
+CreateUploadIntentV1
+UploadIntentV1
+CompletedUploadV1
+CreateDeploymentV1
+DeploymentCreatedV1
+DeploymentStatusV1
+CustomerErrorResponseV1
+```
+
+The upload target describes a private direct-client strategy. Its short-lived authorization
+details are returned only to the requesting browser and are never persisted as durable artifact
+identity. Database and queue contracts continue to use opaque artifact IDs and internal storage
+keys, never signed URLs.
+
+`DeploymentStatusV1` contains customer-safe events, normalization summaries, a public URL only
+after `READY`, and stable error information. It deliberately excludes provider logs, Sandbox
+details, internal event metadata, credentials, and raw source.
+
 ## Interface-change process
 
 When a story needs to change a shared contract:

@@ -1,0 +1,22 @@
+{
+  "name": "@pocketcloud/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "dev": "tsx watch src/main.ts",
+    "start": "tsx src/main.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@pocketcloud/core": "workspace:*",
+    "@pocketcloud/platform": "workspace:*",
+    "fastify": "latest",
+    "zod": "latest"
+  }
+}
