@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality-gate:
+    name: Quality Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node and pnpm
+        uses: pnpm/setup@84cb39b217b10273981911c288cd62326dc7c6d2 # v2.0.2
+        with:
+          runtime: node@24
+          cache: true
+          install: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run lint, type checks, and tests
+        run: pnpm check
+
+      - name: Run production build
+        run: pnpm build
