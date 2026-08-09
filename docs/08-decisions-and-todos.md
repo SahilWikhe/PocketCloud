@@ -100,6 +100,18 @@ This document records decisions reached during initial product and architecture 
 
 **Reason:** Full access control is a later product layer. Origin isolation prevents the public prototype from creating an architectural trap.
 
+### D-017: Use two stable implementation lanes
+
+**Decision:** Builder A owns the control plane and Builder B owns the execution plane, with integration through shared contracts.
+
+**Reason:** Stable path ownership lets two people and their Codex sessions work in parallel without repeatedly editing the same files or inventing incompatible internal models.
+
+### D-018: Markdown defines the backlog; GitHub tracks live work
+
+**Decision:** Repository documentation defines stories, dependencies, and acceptance criteria. GitHub Issues and pull requests record assignment and current status.
+
+**Reason:** Both builders updating one Markdown status table would itself create unnecessary merge conflicts. Issues provide independent claim and discussion records for each story.
+
 ## Open product decisions
 
 - Final product and company name availability
