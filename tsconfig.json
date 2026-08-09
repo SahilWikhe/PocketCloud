@@ -1,0 +1,14 @@
+{
+  "extends": "./packages/config/tsconfig/base.json",
+  "files": [],
+  "references": [
+    { "path": "./apps/api" },
+    { "path": "./apps/web" },
+    { "path": "./apps/worker" },
+    { "path": "./packages/core" },
+    { "path": "./packages/deployment" },
+    { "path": "./packages/execution" },
+    { "path": "./packages/normalizer" },
+    { "path": "./packages/platform" }
+  ]
+}

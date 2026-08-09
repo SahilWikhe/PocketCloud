@@ -2,7 +2,9 @@
 
 PocketCloud is a deployment platform for small, AI-generated applications. Its goal is to make publishing an app feel as simple as sharing a document: upload a project, let PocketCloud understand and repair it, and receive a working link without learning cloud infrastructure.
 
-> Current status: architecture and MVP planning. No production implementation exists yet.
+> Current status: Builder A's control plane is implemented. The workspace, shared contracts,
+> PostgreSQL data layer, private upload flow, lifecycle API, quotas, customer dashboard, and
+> operator suspension controls are ready for integration with Builder B's execution plane.
 
 ## Product promise
 
@@ -54,6 +56,36 @@ PocketCloud/
 
 Only create packages when they contain real code. The boundaries above guide the MVP; they are not a request to build empty abstractions.
 
+## Development setup
+
+PocketCloud uses Node.js 24 and pnpm workspaces. The exact pnpm version is recorded in
+`package.json`, and `pnpm-lock.yaml` is the only dependency lockfile.
+
+```text
+pnpm install
+cp .env.example .env
+pnpm check
+```
+
+Useful commands:
+
+```text
+pnpm dev:api       # API on port 8787
+pnpm dev:web       # dashboard on port 5173, proxying /v1 to the API
+pnpm dev:worker    # Builder B's worker shell
+pnpm --filter @pocketcloud/platform db:migrate
+pnpm check         # lint, all type checks, and all tests
+pnpm build         # production web build and workspace build checks
+```
+
+`DATABASE_URL` must be a pooled Neon PostgreSQL connection string. Vercel Blob must be a
+private store. The API hashes prototype actor identifiers before persistence; raw browser IDs
+and source IPs are not used as durable customer identity.
+
+The control plane can currently accept, quarantine, and queue an upload. It will not reach a
+live URL until Builder B implements and connects the Sandbox, normalization, deployment, and
+worker stories.
+
 ## Documentation map
 
 1. [Product brief](docs/00-product-brief.md)
@@ -69,6 +101,7 @@ Only create packages when they contain real code. The boundaries above guide the
 11. [MVP user stories](docs/10-user-stories.md)
 12. [Shared workstream contracts](docs/11-shared-contracts.md)
 13. [Codex session and handoff guide](docs/12-agent-handoffs.md)
+14. [Builder A implementation handoff](docs/13-builder-a-handoff.md)
 
 Codex and other AI coding agents must also follow the repository-wide instructions in [AGENTS.md](AGENTS.md).
 

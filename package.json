@@ -1,0 +1,30 @@
+{
+  "name": "pocketcloud",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "PocketCloud control plane and isolated deployment workspace",
+  "packageManager": "pnpm@11.16.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "pnpm --recursive --if-present build",
+    "check": "pnpm lint && pnpm typecheck && pnpm test",
+    "dev:api": "pnpm --filter @pocketcloud/api dev",
+    "dev:web": "pnpm --filter @pocketcloud/web dev",
+    "dev:worker": "pnpm --filter @pocketcloud/worker dev",
+    "lint": "eslint apps packages --max-warnings 0",
+    "test": "pnpm --recursive --if-present test",
+    "typecheck": "pnpm --recursive --if-present typecheck"
+  },
+  "devDependencies": {
+    "@eslint/js": "latest",
+    "@types/node": "latest",
+    "eslint": "latest",
+    "tsx": "latest",
+    "typescript": "6.0.3",
+    "typescript-eslint": "latest",
+    "vitest": "latest"
+  }
+}

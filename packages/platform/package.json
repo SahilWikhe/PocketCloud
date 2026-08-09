@@ -1,0 +1,25 @@
+{
+  "name": "@pocketcloud/platform",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./testing": "./src/testing/index.ts"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "db:migrate": "tsx src/database/migrate.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@pocketcloud/core": "workspace:*",
+    "@vercel/blob": "latest",
+    "pg": "latest"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "latest",
+    "@types/pg": "latest"
+  }
+}
