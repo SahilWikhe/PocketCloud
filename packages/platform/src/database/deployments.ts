@@ -22,6 +22,8 @@ interface DeploymentRow {
   idempotency_key: string;
   error_code: PocketCloudErrorCode | null;
   error_summary: string | null;
+  error_retryable: boolean | null;
+  error_retry_after_seconds: number | null;
   started_at: string | Date | null;
   finished_at: string | Date | null;
   created_at: string | Date;
@@ -42,6 +44,8 @@ function mapDeployment(row: DeploymentRow): DeploymentRecord {
     idempotencyKey: row.idempotency_key,
     errorCode: row.error_code,
     errorSummary: row.error_summary,
+    errorRetryable: row.error_retryable,
+    errorRetryAfterSeconds: row.error_retry_after_seconds,
     startedAt: toOptionalIso(row.started_at),
     finishedAt: toOptionalIso(row.finished_at),
     createdAt: toIso(row.created_at),
@@ -110,6 +114,8 @@ export class DeploymentRepository {
     operatorSuspension?: boolean;
     errorCode?: PocketCloudErrorCode;
     errorSummary?: string;
+    errorRetryable?: boolean;
+    errorRetryAfterSeconds?: number;
   }): Promise<DeploymentRecord | null> {
     const locked = await this.sql.query<DeploymentRow>(
       "SELECT * FROM deployments WHERE id = $1 FOR UPDATE",
@@ -135,13 +141,23 @@ export class DeploymentRepository {
        SET status = $2,
            error_code = $3,
            error_summary = $4,
+           error_retryable = $5,
+           error_retry_after_seconds = $6,
            public_url = CASE WHEN $2 = 'SUSPENDED' THEN NULL ELSE public_url END,
            started_at = CASE WHEN started_at IS NULL AND $2 = 'CLAIMED' THEN now() ELSE started_at END,
-           finished_at = CASE WHEN $5 THEN now() ELSE finished_at END,
+           finished_at = CASE WHEN $7 THEN now() ELSE finished_at END,
            updated_at = now()
        WHERE id = $1
        RETURNING *`,
-      [input.id, input.to, input.errorCode ?? null, input.errorSummary ?? null, terminal],
+      [
+        input.id,
+        input.to,
+        input.errorCode ?? null,
+        input.errorSummary ?? null,
+        input.errorRetryable ?? null,
+        input.errorRetryAfterSeconds ?? null,
+        terminal,
+      ],
     );
     return mapDeployment(result.rows[0]!);
   }

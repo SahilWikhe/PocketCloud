@@ -10,6 +10,7 @@ import { registerDeploymentRoutes } from "./routes/deployments/routes";
 import { registerOperatorRoutes } from "./routes/operator/routes";
 import { registerUploadRoutes } from "./routes/uploads/routes";
 import { DeploymentService } from "./services/deployments/deployment-service";
+import { OperationsService } from "./services/operations/operations-service";
 import { UploadService } from "./services/uploads/upload-service";
 import {
   SuspensionService,
@@ -57,6 +58,7 @@ export function buildApi(options: BuildApiOptions): FastifyInstance {
         database: options.database,
         deploymentProvider: options.operator.deploymentProvider,
       }),
+      operations: new OperationsService(options.database),
       operatorApiKey: options.operator.apiKey,
     });
   }

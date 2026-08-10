@@ -16,20 +16,48 @@ This handoff is the source of truth for Builder B's execution-plane delivery as 
 | `PC-206` Vercel deployment provider | Consolidated PR #11 | Merged |
 | `PC-207` Verification and cleanup | Consolidated PR #11 | Merged |
 | `PC-208` Resumable worker orchestration | Consolidated PR #11 | Merged |
-| `PC-302` Customer-visible success/failure matrix | Requires `PC-301` | Pending until the `PC-301` integration PR merges |
+| `PC-301` End-to-end production composition | PR [#13](https://github.com/SahilWikhe/PocketCloud/pull/13), merge `8539209` | Merged |
+| `PC-302` Customer-visible success/failure matrix | Issue [#14](https://github.com/SahilWikhe/PocketCloud/issues/14), combined branch below | Implemented; awaiting review |
+| `PC-303` Controlled pilot readiness | Issue [#15](https://github.com/SahilWikhe/PocketCloud/issues/15), combined branch below | Software controls implemented; manual live gates pending |
 
-The user explicitly requested one consolidated branch and pull request for `PC-202` through
-`PC-208`, which has now merged as PR #11. `PC-301` is implemented separately on the required
-integration-story branch; `PC-302` begins only after that dependency merges.
+The user explicitly requested one consolidated branch and pull request for `PC-302` and `PC-303`.
+`PC-301` and `PC-106` are merged dependencies. PC-302 is complete on the combined branch. PC-303's
+repository-enforced controls and live verification harness are complete, while billing-account
+settings and billable live tests remain owner-authorized launch gates.
 
 ```text
-Lane: Execution Plane
-Branch: codex/builder-b-stories
-Base: main at b310ce9
-Tracked issue: #10
-Shared contract shapes: unchanged
-Shared/public surfaces: additive exports and workspace dependencies
+Lane: Integration (Builder B author, Builder A reviewer)
+Branch: agent/pc-302-303-customer-safety-readiness
+Base: main at 8539209
+Tracked issues: #14 and #15
+Shared contract shape: additive optional customer error guidance
+Shared persistence: migration 0004 preserves retryable and retry-after terminal details
+Shared/public surface: additive OperationalMetricsRepository export
 ```
+
+## PC-302 and PC-303 outcome
+
+- Every stable `PocketCloudErrorCode` has exhaustive canonical customer copy and guidance.
+- Terminal retryability and retry delays persist instead of being guessed from the error code.
+- The API ignores stored exception/event text at the customer boundary and never returns internal
+  metadata, raw provider logs, source fragments, or credentials.
+- Rejected PC-200 fixtures prove archive and deterministic policy failures remain non-retryable.
+- The web UI displays verified URLs, change summaries, and error-specific next actions.
+- Authenticated `GET /v1/operator/operations` exposes queue, failure, Sandbox, AI, storage,
+  rejection, suspension, and cleanup signals.
+- The worker enforces a PostgreSQL-backed global concurrency cap from one through three and sweeps
+  expired upload/quarantine bytes on a bounded interval.
+- A mocked operator test and opt-in real Vercel kill-switch test cover suspension and idempotent
+  provider removal.
+- `docs/15-customer-failure-matrix.md` and `docs/16-pilot-readiness.md` record customer and pilot
+  policy without claiming that external billing gates were changed automatically.
+
+## PC-302/PC-303 interface change
+
+`DeploymentStatusV1.error` and `CustomerErrorResponseV1.error` add optional `guidance`. Existing
+serialized responses remain valid. Migration `0004_customer_failure_details.sql` adds nullable
+`error_retryable` and `error_retry_after_seconds` columns so old deployment rows remain compatible.
+Builder A should review the API/UI presentation seam and the additive platform operations export.
 
 ## Outcome
 
@@ -352,8 +380,9 @@ resources. Production execution introduces:
 - Artifact storage reads/writes and Vercel file uploads.
 
 The worker reports Sandbox creation/time/memory, AI tokens, and provider deployments through
-`UsageSink`. Control-plane quotas and global claim concurrency must remain enabled. Provider account
-spending controls are still a `PC-303` pilot-readiness responsibility.
+`UsageSink`. Control-plane quotas and PostgreSQL-backed global claim concurrency remain enabled.
+Provider account spending controls are documented as mandatory manual PC-303 gates. This branch
+does not mutate billing settings or create provider resources during its default test suite.
 
 ## Verification
 
@@ -371,57 +400,59 @@ At handoff preparation, `pnpm check` passes with:
 - Execution: 8 mocked tests; 1 live Sandbox test skipped.
 - Normalizer: 19 tests.
 - Deployment: 13 mocked tests; 1 live deployment test skipped.
-- Worker: 19 tests.
-- Platform: 5 tests.
-- API: 4 tests.
+- Worker: 25 tests.
+- Platform: 7 tests.
+- API: 22 tests; 1 live kill-switch test skipped.
 - Web: 3 tests.
 
-The standalone fixture catalog adds 5 passing tests. The mocked/default total is 106 passing tests;
-the two real Vercel integration tests are opt-in and were not run because no explicit credential
-and billing authorization were supplied.
+The standalone fixture catalog adds 5 passing tests. The workspace default total is 127 passing
+tests; the fixture command brings the verified total to 132. Three real Vercel integration tests
+are opt-in and were not run because no explicit credential and billing authorization were supplied.
 
 Run live checks only with approved test resources:
 
 ```text
 pnpm --filter @pocketcloud/execution test:integration:vercel
 pnpm --filter @pocketcloud/deployment test:integration:vercel
+pnpm --filter @pocketcloud/api test:integration:kill-switch
 ```
 
 ## Known limitations and explicit non-guarantees
 
-1. `PC-301` production composition is implemented on `agent/pc-301-end-to-end-flow` but must merge
-   before other work can depend on its durable worker/API seam.
-2. `PC-302` remains pending until `PC-301` merges; no claim is made that the final customer
-   success/failure matrix is integrated.
-3. The real Vercel Sandbox and deployment tests remain unexecuted. SDK typing and mocked behavior
+1. Vercel Pro plan/spend-pause settings and OpenAI prepaid/recharge settings require authorized
+   account-owner confirmation; repository code cannot truthfully verify or mutate them.
+2. The real Vercel Sandbox, deployment, and kill-switch tests remain unexecuted. SDK typing and mocked behavior
    pass, but account permissions, billing, region behavior, and current provider responses require
    an approved live test.
-4. Sandbox/deployment idempotency caches inside provider classes are process-local. Durable worker
+3. Sandbox/deployment idempotency caches inside provider classes are process-local. Durable worker
    idempotency comes from the injected checkpoint store and provider deployment ID.
-5. `InMemoryWorkerCheckpointStore` is test/local-only. Production requires a durable adapter and
+4. `InMemoryWorkerCheckpointStore` is test/local-only. Production requires a durable adapter and
    coordinated lease/heartbeat handling.
-6. Provider log redaction is defense in depth, not a general secret scanner. Logs must remain
+5. Provider log redaction is defense in depth, not a general secret scanner. Logs must remain
    internal and excluded by the API.
-7. The static MVP does not authorize uploaded install, build, start, or shell commands.
-8. Verification confirms an HTTPS HTML root and rejects known provider failures; it does not
+6. The static MVP does not authorize uploaded install, build, start, or shell commands.
+7. Verification confirms an HTTPS HTML root and rejects known provider failures; it does not
    execute customer JavaScript or prove semantic application correctness.
-9. Third-party security engines remain documented TODOs.
+8. Third-party security engines remain documented TODOs.
 
 ## Builder A review checklist
 
 - [ ] Review additive public exports and the lockfile.
-- [ ] Confirm no serialized core contract or database migration changed.
+- [ ] Review the additive optional `guidance` field and migration 0004 retry semantics.
 - [ ] Wire `VercelDeploymentProvider.remove` into operator suspension.
 - [ ] Provide durable state, event, usage, and checkpoint sinks to `WorkerPipeline`.
 - [ ] Preserve queue claim/lease/retry rules and pass only `DeploymentJobV1` to the worker.
 - [ ] Keep all credentials in trusted process composition and outside Sandbox inputs.
 - [ ] Keep provider logs and `internalMetadata` out of customer responses.
-- [ ] Run both opt-in Vercel tests with explicit cost authorization before pilot use.
-- [ ] Author `PC-301`, request Builder B review, then unblock `PC-302`.
+- [ ] Review canonical API/UI copy and the operator operational snapshot.
+- [ ] Confirm Vercel/OpenAI billing gates in `docs/16-pilot-readiness.md` with the account owner.
+- [ ] Run all three opt-in Vercel tests with explicit cost authorization before pilot use.
 - [ ] Use `PLATFORM_CHECKS_PASSED`; never claim malware-free or virus-free.
 
 ## Final handoff statement
 
-Builder B's assigned execution stories `PC-200` through `PC-208` are merged with automated
-coverage. Builder A's `PC-301` production composition is implemented on its integration branch and
-awaits Builder B review. Builder B's `PC-302` authorship begins after that dependency lands.
+Builder B's execution stories `PC-200` through `PC-208` and Builder A's PC-301 integration are
+merged. PC-302 customer presentation and PC-303 repository-enforced pilot controls are implemented
+on the combined integration branch. Builder A may review the additive contract/API/UI/database
+seams. The team must not open the pilot until an authorized owner records the manual billing gates
+and approves the three live Vercel tests.

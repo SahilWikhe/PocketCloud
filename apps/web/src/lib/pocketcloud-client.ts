@@ -26,11 +26,15 @@ export interface PocketCloudClientLike {
 
 export class CustomerApiError extends Error {
   readonly retryable: boolean;
+  readonly guidance: string;
 
-  constructor(message: string, retryable: boolean) {
+  constructor(message: string, retryable: boolean, guidance?: string) {
     super(message);
     this.name = "CustomerApiError";
     this.retryable = retryable;
+    this.guidance = guidance ?? (retryable
+      ? "Wait a moment and try again."
+      : "Check the ZIP and choose another file.");
   }
 }
 
@@ -55,7 +59,11 @@ async function parseResponse(response: Response): Promise<unknown> {
   if (!response.ok) {
     const parsed = customerErrorResponseV1Schema.safeParse(body);
     if (parsed.success) {
-      throw new CustomerApiError(parsed.data.error.message, parsed.data.error.retryable);
+      throw new CustomerApiError(
+        parsed.data.error.message,
+        parsed.data.error.retryable,
+        parsed.data.error.guidance,
+      );
     }
     throw new CustomerApiError("PocketCloud could not complete that request.", true);
   }

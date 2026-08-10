@@ -144,6 +144,8 @@ One attempt to publish an app version.
 | `idempotency_key` | Duplicate-request protection |
 | `error_code` | Stable error taxonomy |
 | `error_summary` | Customer-safe summary |
+| `error_retryable` | Exact terminal retry classification |
+| `error_retry_after_seconds` | Optional provider/quota retry delay |
 | `started_at`, `finished_at` | Timing |
 | `created_at`, `updated_at` | Audit timestamps |
 

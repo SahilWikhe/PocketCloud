@@ -76,6 +76,8 @@ export interface DeploymentRecord {
   idempotencyKey: string;
   errorCode: PocketCloudErrorCode | null;
   errorSummary: string | null;
+  errorRetryable: boolean | null;
+  errorRetryAfterSeconds: number | null;
   startedAt: string | null;
   finishedAt: string | null;
   createdAt: string;

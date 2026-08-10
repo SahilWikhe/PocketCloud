@@ -2,9 +2,9 @@
 
 PocketCloud is a deployment platform for small, AI-generated applications. Its goal is to make publishing an app feel as simple as sharing a document: upload a project, let PocketCloud understand and repair it, and receive a working link without learning cloud infrastructure.
 
-> Current status: the control plane, execution plane, and `PC-301` end-to-end production
-> composition are implemented. Customer-visible failure-matrix coverage remains in `PC-302`,
-> followed by the `PC-303` pilot-readiness review.
+> Current status: the control plane, execution plane, `PC-301` end-to-end composition, and
+> `PC-302` customer presentation matrix are implemented. `PC-303` software controls are ready;
+> billing-owner confirmations and approved live provider tests remain mandatory pilot gates.
 
 ## Product promise
 
@@ -104,6 +104,8 @@ Vercel, Blob, and Neon credentials documented in `.env.example`; none are copied
 13. [Codex session and handoff guide](docs/12-agent-handoffs.md)
 14. [Builder A implementation handoff](docs/13-builder-a-handoff.md)
 15. [Builder B execution-plane handoff](docs/14-builder-b-handoff.md)
+16. [Customer success and failure matrix](docs/15-customer-failure-matrix.md)
+17. [Controlled pilot readiness](docs/16-pilot-readiness.md)
 
 Codex and other AI coding agents must also follow the repository-wide instructions in [AGENTS.md](AGENTS.md).
 
