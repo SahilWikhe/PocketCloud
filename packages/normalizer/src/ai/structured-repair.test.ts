@@ -5,6 +5,7 @@ import {
 import { describe, expect, it, vi } from "vitest";
 
 import { repairStaticProjectWithAi, type AiRepairClient } from "./structured-repair";
+import { maximumAiPatchOperations } from "../patches/schema";
 
 const encoder = new TextEncoder();
 
@@ -46,6 +47,32 @@ describe("structured AI repair", () => {
     expect(inspectStaticProject(result.files).findings).toEqual([]);
   });
 
+  it("accepts up to twenty safe patch operations", async () => {
+    const files = project(
+      "<!doctype html><script src=\"http://localhost:5173/app.js\"></script>",
+      [{ path: "app.js", bytes: encoder.encode("document.body.dataset.ready = 'true';") }],
+    );
+    const patches = [{
+      operation: "replace",
+      path: "index.html",
+      content: "<!doctype html><script src=\"app.js\"></script>",
+    }, ...Array.from({ length: maximumAiPatchOperations - 1 }, (_, index) => ({
+      operation: "create",
+      path: `repair-note-${index}.txt`,
+      content: "PocketCloud repair record",
+    }))];
+    const client: AiRepairClient = { proposePatch: async () => response(patches) };
+
+    const result = await repairStaticProjectWithAi(
+      files,
+      inspectStaticProject(files).findings,
+      client,
+    );
+
+    expect(result.changes).toHaveLength(maximumAiPatchOperations);
+    expect(inspectStaticProject(result.files).findings).toEqual([]);
+  });
+
   it("excludes secret-bearing and binary files from the AI request", async () => {
     const files = project(
       "<!doctype html><script src=\"http://localhost:5173/app.js\"></script>",
@@ -74,7 +101,7 @@ describe("structured AI repair", () => {
     response([{ operation: "command", path: "index.html", command: "rm -rf" }]),
     response([{ operation: "create", path: ".env", content: "TOKEN=x" }]),
     response([{ operation: "create", path: "image.png", content: "not binary" }]),
-    response(Array.from({ length: 6 }, (_, index) => ({ operation: "create", path: `file-${index}.txt`, content: "x" }))),
+    response(Array.from({ length: maximumAiPatchOperations + 1 }, (_, index) => ({ operation: "create", path: `file-${index}.txt`, content: "x" }))),
   ])("rejects an unsafe or excessive patch response", async (unsafeResponse) => {
     const files = project("<!doctype html><script src=\"http://localhost:5173/app.js\"></script>");
     const client: AiRepairClient = { proposePatch: async () => unsafeResponse };
