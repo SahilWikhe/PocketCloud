@@ -40,7 +40,15 @@ function artifact(kind: "normalized" | "original" = "normalized", content = "<!d
 function fakeSdk() {
   return {
     uploadFile: vi.fn(async (_request: { requestBody: Uint8Array }, _options?: unknown) => ({})),
-    createDeployment: vi.fn(async () => ({ id: "dpl_206", url: "tiny.vercel.app", projectId: "prj_206" })),
+    createDeployment: vi.fn(async (): Promise<{
+      id: string;
+      url?: string;
+      alias?: string[];
+      projectId?: string;
+    }> => ({ id: "dpl_206", url: "tiny.vercel.app", projectId: "prj_206" })),
+    getDeployments: vi.fn(async () => ({
+      deployments: [{ uid: "dpl_206", url: "tiny.vercel.app" }],
+    })),
     getDeployment: vi.fn(async () => ({ readyState: "READY" })),
     getDeploymentEvents: vi.fn(async (): Promise<unknown> => []),
     cancelDeployment: vi.fn(async () => ({})),
@@ -114,6 +122,29 @@ describe("VercelDeploymentProvider", () => {
     await expect(adapter.deploy(incomplete)).rejects.toMatchObject({ code: "ARTIFACT_INCOMPLETE", retryable: false });
     expect(sdk.uploadFile).not.toHaveBeenCalled();
     expect(sdk.createDeployment).not.toHaveBeenCalled();
+  });
+
+  it("looks up the exact deployment URL when a limited create response omits it", async () => {
+    const sdk = fakeSdk();
+    sdk.createDeployment.mockResolvedValueOnce({ id: "dpl_206", projectId: "prj_206" });
+    sdk.getDeployments.mockResolvedValueOnce({
+      deployments: [
+        { uid: "dpl_other", url: "other.vercel.app" },
+        { uid: "dpl_206", url: "tiny-fallback.vercel.app" },
+      ],
+    });
+
+    await expect(provider(sdk).provider.deploy(artifact())).resolves.toEqual({
+      provider: "vercel",
+      providerDeploymentId: "dpl_206",
+      providerProjectId: "prj_206",
+      candidateUrl: "https://tiny-fallback.vercel.app",
+    });
+    expect(sdk.getDeployments).toHaveBeenCalledWith({
+      teamId: "team_206",
+      projectId: "prj_206",
+      limit: 20,
+    }, { timeoutMs: 30_000 });
   });
 
   it.each([

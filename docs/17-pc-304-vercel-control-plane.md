@@ -59,11 +59,16 @@ The first hosted Preview exposed two issues that local compilation did not catch
    requests returned Vercel `404 NOT_FOUND` before Fastify ran.
 2. The ESM bundle reached the CommonJS `pg` dependency and failed during startup with
    `Dynamic require of "events" is not supported`.
+3. A limited Vercel project token successfully created a customer deployment but omitted its URL
+   from that create response, leaving the worker without an address to verify.
 
 The hotfix replaces that entry with one fixed `api/v1.js` gateway. The public rewrite passes the
 wildcard as an internal query parameter, and the gateway reconstructs the original `/v1/**` URL for
 Fastify. Function bundles now use CommonJS, matching Node dependencies such as `pg`. The build
 cleans the ignored bundle directory first so an obsolete ESM artifact cannot survive locally.
+When a limited create response omits the URL, the provider lists recent deployments in the approved
+project and selects only the exact deployment ID it just created. This preserves the existing
+project allowlist and does not guess or accept a different deployment address.
 
 `vercel/api-path.test.ts` covers rewrite reconstruction and query preservation.
 `scripts/test-vercel-function-bundles.mjs` imports every generated Function bundle and asserts that
@@ -125,7 +130,7 @@ PocketCloud control-plane project.
 ```text
 pnpm lint                 passed
 pnpm typecheck            passed
-pnpm test                 133 passed; 3 live-provider tests skipped
+pnpm test                 134 passed; 3 live-provider tests skipped
 pnpm build                passed
 pnpm build:vercel         passed
 vercel build --target=preview
