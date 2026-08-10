@@ -12,7 +12,8 @@ import {
 } from "@pocketcloud/core";
 import { Sandbox } from "@vercel/sandbox";
 
-const sandboxWorkspace = "/vercel/sandbox/workspace";
+const sandboxWorkspaceDirectory = "workspace";
+const sandboxWorkspace = "/vercel/workspace";
 const maximumEnvironmentTimeoutMilliseconds = 120_000;
 const maximumVcpus = 4;
 const memoryMegabytesPerVcpu = 2_048;
@@ -292,7 +293,7 @@ export class VercelSandboxExecutionProvider implements ExecutionProvider {
       if (this.activeEnvironments.has(sandbox.name)) {
         throw new Error("Vercel returned a duplicate sandbox name");
       }
-      await sandbox.mkDir(sandboxWorkspace);
+      await sandbox.mkDir(sandboxWorkspaceDirectory);
       this.activeEnvironments.set(sandbox.name, {
         sandbox,
         timeoutMilliseconds: options.timeoutMilliseconds,

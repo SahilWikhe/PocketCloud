@@ -57,6 +57,8 @@ interface VercelDeploymentSdk {
   ): Promise<unknown>;
 }
 
+type UploadVercelFile = VercelDeploymentSdk["uploadFile"];
+
 export interface VercelDeploymentProviderOptions {
   token: string;
   projectName: string;
@@ -253,6 +255,7 @@ function eventLevel(event: Record<string, unknown>): ProviderLog["level"] {
 
 export class VercelDeploymentProvider implements DeploymentProvider {
   private readonly sdk: VercelDeploymentSdk;
+  private readonly uploadFile: UploadVercelFile;
   private readonly teamId: string | undefined;
   private readonly projectId: string | undefined;
   private readonly projectName: string;
@@ -271,7 +274,33 @@ export class VercelDeploymentProvider implements DeploymentProvider {
     this.projectName = options.projectName;
     this.requestTimeoutMilliseconds = timeout;
     this.now = options.now ?? Date.now;
-    this.sdk = options.sdk ?? new Vercel({ bearerToken: options.token }).deployments as unknown as VercelDeploymentSdk;
+    if (options.sdk) {
+      this.sdk = options.sdk;
+      this.uploadFile = options.sdk.uploadFile.bind(options.sdk);
+    } else {
+      this.sdk = new Vercel({ bearerToken: options.token }).deployments as unknown as VercelDeploymentSdk;
+      this.uploadFile = async (request, requestOptions) => {
+        const url = new URL("https://api.vercel.com/v2/files");
+        if (request.teamId) url.searchParams.set("teamId", request.teamId);
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${options.token}`,
+            "content-type": "application/octet-stream",
+            "content-length": String(request.contentLength),
+            "x-vercel-digest": request.xVercelDigest,
+          },
+          body: Buffer.from(request.requestBody),
+          signal: AbortSignal.timeout(requestOptions?.timeoutMs ?? this.requestTimeoutMilliseconds),
+        });
+        if (!response.ok) {
+          throw Object.assign(new Error(`Vercel file upload failed with status ${response.status}`), {
+            statusCode: response.status,
+            headers: response.headers,
+          });
+        }
+      };
+    }
   }
 
   async deploy(input: DeployableArtifact): Promise<ProviderDeployment> {
@@ -280,7 +309,7 @@ export class VercelDeploymentProvider implements DeploymentProvider {
       const files: { file: string; sha: string; size: number }[] = [];
       for (const file of input.manifest.files) {
         const verified = await readAndVerifyFile(input, file);
-        await this.sdk.uploadFile(withTeam({
+        await this.uploadFile(withTeam({
           contentLength: verified.bytes.byteLength,
           xVercelDigest: verified.sha1,
           requestBody: verified.bytes,
@@ -288,7 +317,7 @@ export class VercelDeploymentProvider implements DeploymentProvider {
         files.push({ file: file.path, sha: verified.sha1, size: file.size });
       }
       const configurationSha1 = createHash("sha1").update(platformVercelConfiguration).digest("hex");
-      await this.sdk.uploadFile(withTeam({
+      await this.uploadFile(withTeam({
         contentLength: platformVercelConfiguration.byteLength,
         xVercelDigest: configurationSha1,
         requestBody: platformVercelConfiguration,

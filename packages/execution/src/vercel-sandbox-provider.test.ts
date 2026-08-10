@@ -61,7 +61,7 @@ describe("VercelSandboxExecutionProvider", () => {
       tags: { deploymentId: "deployment-201" },
       persistent: false,
     });
-    expect(sandbox.mkDir).toHaveBeenCalledWith("/vercel/sandbox/workspace");
+    expect(sandbox.mkDir).toHaveBeenCalledWith("workspace");
   });
 
   it("rejects runtime settings that would weaken or misrepresent the sandbox", async () => {
@@ -111,20 +111,20 @@ describe("VercelSandboxExecutionProvider", () => {
 
     expect(sandbox.writeFiles).toHaveBeenCalledWith([
       {
-        path: "/vercel/sandbox/workspace/src/index.js",
+        path: "/vercel/workspace/src/index.js",
         content: input,
       },
     ]);
     expect(sandbox.runCommand).toHaveBeenCalledWith({
       cmd: "node",
       args: ["src/index.js"],
-      cwd: "/vercel/sandbox/workspace",
+      cwd: "/vercel/workspace",
       env: {},
       sudo: false,
       timeoutMs: 5_000,
     });
     expect(sandbox.readFileToBuffer).toHaveBeenCalledWith({
-      path: "/vercel/sandbox/workspace/dist/index.html",
+      path: "/vercel/workspace/dist/index.html",
     });
   });
 
