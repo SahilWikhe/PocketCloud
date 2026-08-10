@@ -1,1 +1,1 @@
-export const DEPLOYMENT_PACKAGE_READY = true;
+export * from "./vercel/vercel-deployment-provider";

@@ -2,9 +2,9 @@
 
 PocketCloud is a deployment platform for small, AI-generated applications. Its goal is to make publishing an app feel as simple as sharing a document: upload a project, let PocketCloud understand and repair it, and receive a working link without learning cloud infrastructure.
 
-> Current status: Builder A's control plane is implemented. The workspace, shared contracts,
-> PostgreSQL data layer, private upload flow, lifecycle API, quotas, customer dashboard, and
-> operator suspension controls are ready for integration with Builder B's execution plane.
+> Current status: the control plane and Builder B execution-plane packages are implemented.
+> End-to-end production composition remains in `PC-301`: the API/queue, durable platform sinks,
+> Vercel providers, and worker pipeline still need to be wired through their public interfaces.
 
 ## Product promise
 
@@ -82,9 +82,9 @@ pnpm build         # production web build and workspace build checks
 private store. The API hashes prototype actor identifiers before persistence; raw browser IDs
 and source IPs are not used as durable customer identity.
 
-The control plane can currently accept, quarantine, and queue an upload. It will not reach a
-live URL until Builder B implements and connects the Sandbox, normalization, deployment, and
-worker stories.
+The control plane can accept, quarantine, and queue an upload. The execution plane can safely
+inspect, normalize, deploy, verify, and clean up a static project through injected interfaces.
+It will not reach a live URL from the production entry points until `PC-301` connects both lanes.
 
 ## Documentation map
 
@@ -102,6 +102,7 @@ worker stories.
 12. [Shared workstream contracts](docs/11-shared-contracts.md)
 13. [Codex session and handoff guide](docs/12-agent-handoffs.md)
 14. [Builder A implementation handoff](docs/13-builder-a-handoff.md)
+15. [Builder B execution-plane handoff](docs/14-builder-b-handoff.md)
 
 Codex and other AI coding agents must also follow the repository-wide instructions in [AGENTS.md](AGENTS.md).
 

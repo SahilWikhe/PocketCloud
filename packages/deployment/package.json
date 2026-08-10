@@ -8,10 +8,12 @@
   },
   "scripts": {
     "build": "tsc --noEmit",
+    "test:integration:vercel": "POCKETCLOUD_RUN_VERCEL_DEPLOYMENT_INTEGRATION=1 vitest run src/vercel/vercel-deployment-provider.integration.test.ts",
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@pocketcloud/core": "workspace:*"
+    "@pocketcloud/core": "workspace:*",
+    "@vercel/sdk": "1.28.16"
   }
 }

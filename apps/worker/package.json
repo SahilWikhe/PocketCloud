@@ -14,6 +14,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@pocketcloud/core": "workspace:*"
+    "@pocketcloud/core": "workspace:*",
+    "@pocketcloud/deployment": "workspace:*",
+    "@pocketcloud/execution": "workspace:*",
+    "@pocketcloud/normalizer": "workspace:*"
   }
 }

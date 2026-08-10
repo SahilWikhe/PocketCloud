@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@pocketcloud/core": "workspace:*"
+    "@pocketcloud/core": "workspace:*",
+    "zod": "latest"
   }
 }
