@@ -82,4 +82,16 @@ export class PostgresDeploymentQueue {
   }): Promise<boolean> {
     return new DeploymentJobRepository(this.database).retry(input);
   }
+
+  fail(input: {
+    jobId: string;
+    workerId: string;
+    errorCode: PocketCloudErrorCode;
+  }): Promise<boolean> {
+    return new DeploymentJobRepository(this.database).fail(input);
+  }
+
+  cancel(jobId: string, workerId: string): Promise<boolean> {
+    return new DeploymentJobRepository(this.database).cancel(jobId, workerId);
+  }
 }

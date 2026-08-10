@@ -62,4 +62,28 @@ export class VersionRepository {
     const result = await this.sql.query<VersionRow>("SELECT * FROM app_versions WHERE id = $1", [id]);
     return result.rows[0] ? mapVersion(result.rows[0]) : null;
   }
+
+  async recordWorkerOutput(input: {
+    versionId: string;
+    normalizedArtifactId?: string;
+    projectPlan?: ProjectPlanV1;
+    platformCheckStatus?: AppVersionRecord["platformCheckStatus"];
+  }): Promise<AppVersionRecord | null> {
+    const result = await this.sql.query<VersionRow>(
+      `UPDATE app_versions
+       SET normalized_artifact_id = COALESCE($2, normalized_artifact_id),
+           project_plan = COALESCE($3, project_plan),
+           platform_check_status = COALESCE($4, platform_check_status)
+       WHERE id = $1
+         AND ($2::text IS NULL OR normalized_artifact_id IS NULL OR normalized_artifact_id = $2)
+       RETURNING *`,
+      [
+        input.versionId,
+        input.normalizedArtifactId ?? null,
+        input.projectPlan === undefined ? null : JSON.stringify(input.projectPlan),
+        input.platformCheckStatus ?? null,
+      ],
+    );
+    return result.rows[0] ? mapVersion(result.rows[0]) : null;
+  }
 }

@@ -10,13 +10,17 @@
     "build": "tsc --noEmit",
     "dev": "tsx watch src/main.ts",
     "start": "tsx src/main.ts",
-    "test": "vitest run",
+    "test": "vitest run --fileParallelism=false --hookTimeout=30000",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@pocketcloud/core": "workspace:*",
+    "@pocketcloud/deployment": "workspace:*",
     "@pocketcloud/platform": "workspace:*",
     "fastify": "latest",
     "zod": "latest"
+  },
+  "devDependencies": {
+    "@pocketcloud/worker": "workspace:*"
   }
 }

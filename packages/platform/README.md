@@ -25,8 +25,12 @@ They do not require a developer's Neon database or credentials.
 ## Builder B integration seams
 
 - `PostgresDeploymentQueue` returns a validated `DeploymentJobV1` and owns claim, heartbeat,
-  completion, retry, global concurrency, and one-active-job-per-actor behavior.
+  completion, retry, terminal failure/cancellation, global concurrency, and one-active-job-per-actor
+  behavior. Expired claims can resume from any non-terminal worker stage.
 - `PlatformArtifactStore` implements the shared `ArtifactStore`, so the worker can retrieve the
   immutable original ZIP and write an approved normalized artifact without importing API code.
+- `DeploymentWorkerCheckpointRepository` durably stores the execution-plane checkpoint while the
+  worker integration adapters keep normalized artifact IDs, project plans, changes, provider IDs,
+  events, usage, and deployment state synchronized with their authoritative records.
 - `VercelBlobPrivateObjectStorage` owns private Blob client authorization, reads, writes, and
   deletion. The Vercel SDK does not leak through public PocketCloud contracts.

@@ -10,7 +10,7 @@
   "scripts": {
     "build": "tsc --noEmit",
     "db:migrate": "tsx src/database/migrate.ts",
-    "test": "vitest run",
+    "test": "vitest run --fileParallelism=false --hookTimeout=30000",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

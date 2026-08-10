@@ -85,6 +85,14 @@ export class DeploymentRepository {
     return result.rows[0] ? mapDeployment(result.rows[0]) : null;
   }
 
+  async findByIdForUpdate(id: string): Promise<DeploymentRecord | null> {
+    const result = await this.sql.query<DeploymentRow>(
+      "SELECT * FROM deployments WHERE id = $1 FOR UPDATE",
+      [id],
+    );
+    return result.rows[0] ? mapDeployment(result.rows[0]) : null;
+  }
+
   async findByIdempotencyKey(
     actorKey: string,
     idempotencyKey: string,

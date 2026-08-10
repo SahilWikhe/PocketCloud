@@ -35,6 +35,9 @@ importers:
       '@pocketcloud/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@pocketcloud/deployment':
+        specifier: workspace:*
+        version: link:../../packages/deployment
       '@pocketcloud/platform':
         specifier: workspace:*
         version: link:../../packages/platform
@@ -44,6 +47,10 @@ importers:
       zod:
         specifier: latest
         version: 4.4.3
+    devDependencies:
+      '@pocketcloud/worker':
+        specifier: workspace:*
+        version: link:../worker
 
   apps/web:
     dependencies:
@@ -96,6 +103,12 @@ importers:
       '@pocketcloud/normalizer':
         specifier: workspace:*
         version: link:../../packages/normalizer
+      '@pocketcloud/platform':
+        specifier: workspace:*
+        version: link:../../packages/platform
+      zod:
+        specifier: latest
+        version: 4.4.3
 
   packages/config: {}
 

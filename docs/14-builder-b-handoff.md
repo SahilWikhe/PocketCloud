@@ -9,18 +9,18 @@ This handoff is the source of truth for Builder B's execution-plane delivery as 
 |---|---|---|
 | `PC-200` Sample fixtures | PR [#8](https://github.com/SahilWikhe/PocketCloud/pull/8), merge `ba224e8` | Merged |
 | `PC-201` Vercel Sandbox provider | PR [#9](https://github.com/SahilWikhe/PocketCloud/pull/9), merge `b310ce9` | Merged |
-| `PC-202` Safe ZIP inspection and extraction | Consolidated issue [#10](https://github.com/SahilWikhe/PocketCloud/issues/10) | Implemented on `codex/builder-b-stories` |
-| `PC-203` Static project analysis | Consolidated issue #10 | Implemented on `codex/builder-b-stories` |
-| `PC-204` Deterministic normalization | Consolidated issue #10 | Implemented on `codex/builder-b-stories` |
-| `PC-205` Structured AI repair | Consolidated issue #10 | Implemented on `codex/builder-b-stories` |
-| `PC-206` Vercel deployment provider | Consolidated issue #10 | Implemented on `codex/builder-b-stories` |
-| `PC-207` Verification and cleanup | Consolidated issue #10 | Implemented on `codex/builder-b-stories` |
-| `PC-208` Resumable worker orchestration | Consolidated issue #10 | Implemented on `codex/builder-b-stories` |
-| `PC-302` Customer-visible success/failure matrix | Requires `PC-301` | Blocked; `PC-301` is not on `main` or in an open PR |
+| `PC-202` Safe ZIP inspection and extraction | Consolidated PR [#11](https://github.com/SahilWikhe/PocketCloud/pull/11) | Merged |
+| `PC-203` Static project analysis | Consolidated PR #11 | Merged |
+| `PC-204` Deterministic normalization | Consolidated PR #11 | Merged |
+| `PC-205` Structured AI repair | Consolidated PR #11 | Merged |
+| `PC-206` Vercel deployment provider | Consolidated PR #11 | Merged |
+| `PC-207` Verification and cleanup | Consolidated PR #11 | Merged |
+| `PC-208` Resumable worker orchestration | Consolidated PR #11 | Merged |
+| `PC-302` Customer-visible success/failure matrix | Requires `PC-301` | Pending until the `PC-301` integration PR merges |
 
 The user explicitly requested one consolidated branch and pull request for `PC-202` through
-`PC-208`. `PC-302` is not included because its required Builder A-authored `PC-301` integration
-does not exist yet. This is a dependency block, not an unimplemented execution-plane primitive.
+`PC-208`, which has now merged as PR #11. `PC-301` is implemented separately on the required
+integration-story branch; `PC-302` begins only after that dependency merges.
 
 ```text
 Lane: Execution Plane
@@ -389,10 +389,10 @@ pnpm --filter @pocketcloud/deployment test:integration:vercel
 
 ## Known limitations and explicit non-guarantees
 
-1. `PC-301` production composition is not merged, so the API queue does not yet invoke the worker
-   pipeline and the API operator entry point still needs the real deployment provider.
-2. `PC-302` is blocked on `PC-301`; no claim is made that the final customer success/failure matrix
-   is integrated.
+1. `PC-301` production composition is implemented on `agent/pc-301-end-to-end-flow` but must merge
+   before other work can depend on its durable worker/API seam.
+2. `PC-302` remains pending until `PC-301` merges; no claim is made that the final customer
+   success/failure matrix is integrated.
 3. The real Vercel Sandbox and deployment tests remain unexecuted. SDK typing and mocked behavior
    pass, but account permissions, billing, region behavior, and current provider responses require
    an approved live test.
@@ -422,8 +422,6 @@ pnpm --filter @pocketcloud/deployment test:integration:vercel
 
 ## Final handoff statement
 
-Builder B's assigned execution stories `PC-200` through `PC-208` now have implementations and
-automated coverage. `PC-200` and `PC-201` are already merged; `PC-202` through `PC-208` are delivered
-on the consolidated branch requested by the user. The next required merge is this execution-plane
-branch, followed by Builder A's `PC-301` production composition. Builder B's `PC-302` authorship
-remains blocked until that dependency lands.
+Builder B's assigned execution stories `PC-200` through `PC-208` are merged with automated
+coverage. Builder A's `PC-301` production composition is implemented on its integration branch and
+awaits Builder B review. Builder B's `PC-302` authorship begins after that dependency lands.

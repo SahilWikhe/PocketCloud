@@ -36,10 +36,13 @@ export class UsageRepository {
     metric: UsageMetric | "deployment";
     quantity: number;
     provider?: string;
+    occurredAt?: string;
   }): Promise<UsageEventRecord> {
     const result = await this.sql.query<UsageRow>(
-      `INSERT INTO usage_events (id, actor_key, deployment_id, metric, quantity, provider)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO usage_events (
+         id, actor_key, deployment_id, metric, quantity, provider, created_at
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, COALESCE($7::timestamptz, now()))
        RETURNING *`,
       [
         input.id,
@@ -48,6 +51,7 @@ export class UsageRepository {
         input.metric,
         input.quantity,
         input.provider ?? null,
+        input.occurredAt ?? null,
       ],
     );
     return mapUsage(result.rows[0]!);

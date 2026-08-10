@@ -39,6 +39,7 @@ export class DeploymentEventRepository {
     code: string;
     customerMessage: string;
     internalMetadata?: Record<string, unknown>;
+    occurredAt?: string;
   }): Promise<PersistedDeploymentEvent> {
     const counter = await this.sql.query<{ sequence: number }>(
       `INSERT INTO deployment_event_counters (deployment_id, next_sequence)
@@ -52,7 +53,7 @@ export class DeploymentEventRepository {
     const result = await this.sql.query<EventRow>(
       `INSERT INTO deployment_events (
          id, deployment_id, sequence, type, code, customer_message, internal_metadata, created_at
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, now())
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, COALESCE($8::timestamptz, now()))
        RETURNING *`,
       [
         input.id,
@@ -62,6 +63,7 @@ export class DeploymentEventRepository {
         input.code,
         input.customerMessage,
         input.internalMetadata ? JSON.stringify(input.internalMetadata) : null,
+        input.occurredAt ?? null,
       ],
     );
     return mapEvent(result.rows[0]!);
