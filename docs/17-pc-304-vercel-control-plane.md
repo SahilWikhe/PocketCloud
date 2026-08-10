@@ -136,6 +136,8 @@ pnpm build:vercel         passed
 vercel build --target=preview
                           passed; UI and all three Functions emitted
 pnpm test:vercel          passed; route tests and all three generated Function bundles load
+hosted Preview API probe  passed; PocketCloud validation response replaced Vercel 404/500
+hosted ZIP-to-link smoke  passed; deployment reached READY and generated page returned HTTP 200
 ```
 
 Automated tests use PGlite, in-memory storage, and fake providers. The Vercel build reads project
@@ -166,9 +168,6 @@ deployment usage remains subject to the owner's provider plan and PC-303 spendin
 
 - Vercel environment variables and Neon migrations are an owner-controlled launch step and are not
   committed by this story.
-- The hotfix still requires a fresh hosted Preview verification before merge: `/v1/**` must reach
-  Fastify rather than Vercel's 404 page, followed by a complete ZIP-to-link run when Preview has the
-  required environment variables.
 - The current static pipeline may need multiple Queue deliveries when provider publishing exceeds
   one 35-second wait window; checkpointing prevents duplicate normalization or deployment creation.
 - Vercel Queue is currently beta. PostgreSQL state keeps the product recoverable, but a future
