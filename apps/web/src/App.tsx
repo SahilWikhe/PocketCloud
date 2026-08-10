@@ -70,7 +70,11 @@ export function App({ client }: AppProps) {
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState<ProgressUpdate>({ message: "Ready to upload" });
   const [result, setResult] = useState<DeploymentStatusV1 | null>(null);
-  const [error, setError] = useState<{ message: string; retryable: boolean } | null>(null);
+  const [error, setError] = useState<{
+    message: string;
+    guidance: string;
+    retryable: boolean;
+  } | null>(null);
 
   function selectFile(nextFile: File | undefined): void {
     if (!nextFile) {
@@ -96,11 +100,19 @@ export function App({ client }: AppProps) {
       return;
     }
     if (!file.name.toLowerCase().endsWith(".zip")) {
-      setError({ message: "Choose a ZIP file containing your static website.", retryable: false });
+      setError({
+        message: "Choose a ZIP file containing your static website.",
+        guidance: "Create a ZIP containing one static website and choose it again.",
+        retryable: false,
+      });
       return;
     }
     if (file.size > maximumMvpUploadBytes) {
-      setError({ message: "Your ZIP must be 10 MB or smaller.", retryable: false });
+      setError({
+        message: "Your ZIP must be 10 MB or smaller.",
+        guidance: "Reduce the ZIP size and choose it again.",
+        retryable: false,
+      });
       return;
     }
 
@@ -113,6 +125,9 @@ export function App({ client }: AppProps) {
       if (deployment.status !== "READY") {
         setError({
           message: deployment.error?.message ?? "This deployment did not finish successfully.",
+          guidance: deployment.error?.guidance ?? (deployment.error?.retryable
+            ? "Wait a moment and try again."
+            : "Check the ZIP and choose another file."),
           retryable: deployment.error?.retryable ?? false,
         });
       }
@@ -120,6 +135,7 @@ export function App({ client }: AppProps) {
       const customerError = caught instanceof CustomerApiError ? caught : null;
       setError({
         message: customerError?.message ?? "PocketCloud could not finish this deployment.",
+        guidance: customerError?.guidance ?? "Wait a moment and try again.",
         retryable: customerError?.retryable ?? true,
       });
     } finally {
@@ -244,7 +260,7 @@ export function App({ client }: AppProps) {
               {error && (
                 <div className="error-box">
                   <p>{error.message}</p>
-                  <span>{error.retryable ? "You can try again." : "Check the ZIP and choose another file."}</span>
+                  <span>{error.guidance}</span>
                 </div>
               )}
 

@@ -3,7 +3,6 @@ import {
   type CreateDeploymentV1,
   type DeploymentCreatedV1,
   type DeploymentStatusV1,
-  type PocketCloudErrorCode,
 } from "@pocketcloud/core";
 import {
   AppRepository,
@@ -23,20 +22,13 @@ import {
   defaultPrototypeQuotaPolicy,
   type PrototypeQuotaPolicy,
 } from "../quotas/quota-policy";
+import { presentCustomerError, presentCustomerEvent } from "./customer-presentation";
 
 export interface DeploymentServiceOptions {
   database: TransactionalSqlExecutor;
   idFactory?: IdFactory;
   quotaPolicy?: PrototypeQuotaPolicy;
 }
-
-const retryableErrorCodes = new Set<PocketCloudErrorCode>([
-  "PROVIDER_RATE_LIMITED",
-  "PROVIDER_DEPLOYMENT_FAILED",
-  "VERIFICATION_FAILED",
-  "INTERNAL_RETRYABLE",
-  "DEPLOYMENT_RATE_LIMITED",
-]);
 
 export class DeploymentService {
   private readonly database: TransactionalSqlExecutor;
@@ -157,6 +149,16 @@ export class DeploymentService {
     const changes = await new NormalizationChangeRepository(this.database).listForVersion(
       deployment.versionId,
     );
+    const error = deployment.errorCode
+      ? presentCustomerError(deployment.errorCode, {
+          ...(deployment.errorRetryable === null
+            ? {}
+            : { retryable: deployment.errorRetryable }),
+          ...(deployment.errorRetryAfterSeconds === null
+            ? {}
+            : { retryAfterSeconds: deployment.errorRetryAfterSeconds }),
+        })
+      : null;
 
     return {
       schemaVersion: 1,
@@ -165,19 +167,12 @@ export class DeploymentService {
       versionId: deployment.versionId,
       status: deployment.status,
       publicUrl: deployment.status === "READY" ? deployment.publicUrl : null,
-      error:
-        deployment.errorCode && deployment.errorSummary
-          ? {
-              code: deployment.errorCode,
-              message: deployment.errorSummary,
-              retryable: retryableErrorCodes.has(deployment.errorCode),
-            }
-          : null,
+      error,
       events: events.map((event) => ({
         sequence: event.sequence,
         type: event.type,
         code: event.code,
-        customerMessage: event.customerMessage,
+        customerMessage: presentCustomerEvent(event),
         occurredAt: event.occurredAt,
       })),
       changes,

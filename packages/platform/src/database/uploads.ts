@@ -100,4 +100,26 @@ export class UploadIntentRepository {
       [id],
     );
   }
+
+  async listExpiredPending(before: string, limit = 100): Promise<readonly UploadIntentRecord[]> {
+    const result = await this.sql.query<UploadIntentRow>(
+      `SELECT * FROM upload_intents
+       WHERE status = 'PENDING' AND expires_at <= $1::timestamptz
+       ORDER BY expires_at, id
+       LIMIT $2`,
+      [before, limit],
+    );
+    return result.rows.map(mapUploadIntent);
+  }
+
+  async markExpired(id: string, before: string): Promise<UploadIntentRecord | null> {
+    const result = await this.sql.query<UploadIntentRow>(
+      `UPDATE upload_intents
+       SET status = 'EXPIRED'
+       WHERE id = $1 AND status = 'PENDING' AND expires_at <= $2::timestamptz
+       RETURNING *`,
+      [id, before],
+    );
+    return result.rows[0] ? mapUploadIntent(result.rows[0]) : null;
+  }
 }

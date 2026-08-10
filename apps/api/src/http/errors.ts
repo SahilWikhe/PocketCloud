@@ -6,6 +6,8 @@ import {
 import type { FastifyInstance } from "fastify";
 import { ZodError } from "zod";
 
+import { presentCustomerError } from "../services/deployments/customer-presentation";
+
 const statusByCode: Partial<Record<PocketCloudErrorCode, number>> = {
   REQUEST_INVALID: 400,
   UPLOAD_INVALID: 400,
@@ -48,14 +50,21 @@ export function registerErrorHandler(app: FastifyInstance): void {
     if (pocketCloudError.retryAfterSeconds !== undefined) {
       void reply.header("retry-after", String(pocketCloudError.retryAfterSeconds));
     }
+    const presentation = presentCustomerError(pocketCloudError.code, {
+      retryable: pocketCloudError.retryable,
+      ...(pocketCloudError.retryAfterSeconds === undefined
+        ? {}
+        : { retryAfterSeconds: pocketCloudError.retryAfterSeconds }),
+    });
     const body = customerErrorResponseV1Schema.parse({
       error: {
-        code: pocketCloudError.code,
-        message: pocketCloudError.customerMessage,
-        retryable: pocketCloudError.retryable,
-        ...(pocketCloudError.retryAfterSeconds === undefined
+        code: presentation.code,
+        message: presentation.message,
+        guidance: presentation.guidance,
+        retryable: presentation.retryable,
+        ...(presentation.retryAfterSeconds === undefined
           ? {}
-          : { retryAfterSeconds: pocketCloudError.retryAfterSeconds }),
+          : { retryAfterSeconds: presentation.retryAfterSeconds }),
         correlationId: request.id,
       },
     });

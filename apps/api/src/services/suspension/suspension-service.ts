@@ -69,6 +69,7 @@ export class SuspensionService {
           operatorSuspension: true,
           errorCode: "DEPLOYMENT_SUSPENDED",
           errorSummary: "This app was suspended by a PocketCloud operator.",
+          errorRetryable: false,
         });
         await events.append({
           id: this.ids.create("evt"),

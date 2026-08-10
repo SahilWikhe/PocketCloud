@@ -11,6 +11,7 @@
     "dev": "tsx watch src/main.ts",
     "start": "tsx src/main.ts",
     "test": "vitest run --fileParallelism=false --hookTimeout=30000",
+    "test:integration:kill-switch": "POCKETCLOUD_RUN_LIVE_KILL_SWITCH=1 vitest run src/operator-kill-switch.integration.test.ts --fileParallelism=false --hookTimeout=150000",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

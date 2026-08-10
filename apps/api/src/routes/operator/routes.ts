@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 
 import { authorizeOperator } from "../../auth/operator";
+import type { OperationsService } from "../../services/operations/operations-service";
 import type { SuspensionService } from "../../services/suspension/suspension-service";
 
 const parametersSchema = z.object({ appId: z.string().min(1) });
@@ -9,6 +10,7 @@ const actionBodySchema = z.object({ reason: z.string().trim().min(3).max(1000) }
 
 export interface OperatorRoutesOptions {
   service: SuspensionService;
+  operations: OperationsService;
   operatorApiKey: string;
 }
 
@@ -16,6 +18,11 @@ export function registerOperatorRoutes(
   app: FastifyInstance,
   options: OperatorRoutesOptions,
 ): void {
+  app.get("/v1/operator/operations", async (request, reply) => {
+    authorizeOperator(request, options.operatorApiKey);
+    return reply.send(await options.operations.getSnapshot());
+  });
+
   app.post("/v1/operator/apps/:appId/suspend", async (request, reply) => {
     const parameters = parametersSchema.parse(request.params);
     const body = actionBodySchema.parse(request.body);

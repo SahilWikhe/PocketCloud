@@ -220,7 +220,14 @@ export class PostgresDeploymentStateSink implements DeploymentStateSink {
             to: target,
             ...(input.error === undefined
               ? {}
-              : { errorCode: input.error.code, errorSummary: input.error.customerMessage }),
+                : {
+                    errorCode: input.error.code,
+                    errorSummary: input.error.customerMessage,
+                    errorRetryable: input.error.retryable,
+                    ...(input.error.retryAfterSeconds === undefined
+                      ? {}
+                      : { errorRetryAfterSeconds: input.error.retryAfterSeconds }),
+                  }),
           });
         } else {
           if (currentIndex < 0 || targetIndex < 0) {

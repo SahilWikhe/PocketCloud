@@ -8,6 +8,7 @@ export * from "./jobs";
 export * from "./migrations";
 export * from "./models";
 export * from "./operator-actions";
+export * from "./operations";
 export * from "./uploads";
 export * from "./usage";
 export * from "./versions";

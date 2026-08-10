@@ -79,7 +79,8 @@ describe("PocketCloud upload experience", () => {
       changes: [],
       error: {
         code: "ENTRYPOINT_MISSING",
-        message: "We could not find an index.html file in this project.",
+        message: "PocketCloud could not find a supported index.html entry point.",
+        guidance: "Add index.html at the ZIP root or inside one wrapper folder.",
         retryable: false,
       },
     };
@@ -89,9 +90,11 @@ describe("PocketCloud upload experience", () => {
     fireEvent.click(screen.getByRole("button", { name: "Publish website" }));
 
     expect(
-      await screen.findByText("We could not find an index.html file in this project."),
+      await screen.findByText("PocketCloud could not find a supported index.html entry point."),
     ).toBeInTheDocument();
-    expect(screen.getByText("Check the ZIP and choose another file.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Add index.html at the ZIP root or inside one wrapper folder."),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/Vercel|Sandbox|provider/i)).not.toBeInTheDocument();
   });
 });

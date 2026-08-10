@@ -84,6 +84,31 @@ export class ArtifactRepository {
     );
     return result.rows[0] ? mapArtifact(result.rows[0]) : null;
   }
+
+  async listExpired(before: string, limit = 100): Promise<readonly ArtifactRecord[]> {
+    const result = await this.sql.query<ArtifactRow>(
+      `SELECT * FROM artifacts
+       WHERE status <> 'DELETED' AND expires_at IS NOT NULL AND expires_at <= $1::timestamptz
+       ORDER BY expires_at, id
+       LIMIT $2`,
+      [before, limit],
+    );
+    return result.rows.map(mapArtifact);
+  }
+
+  async markDeleted(id: string, before: string): Promise<ArtifactRecord | null> {
+    const result = await this.sql.query<ArtifactRow>(
+      `UPDATE artifacts
+       SET status = 'DELETED'
+       WHERE id = $1
+         AND status <> 'DELETED'
+         AND expires_at IS NOT NULL
+         AND expires_at <= $2::timestamptz
+       RETURNING *`,
+      [id, before],
+    );
+    return result.rows[0] ? mapArtifact(result.rows[0]) : null;
+  }
 }
 
 interface ArtifactFileRow {

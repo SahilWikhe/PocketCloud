@@ -8,6 +8,7 @@ import {
 } from "@pocketcloud/core";
 import {
   AppRepository,
+  DeploymentEventRepository,
   DeploymentRepository,
   MemoryPrivateObjectStorage,
   OperatorActionRepository,
@@ -165,6 +166,55 @@ describe("control-plane API", () => {
     expect(completion.json()).toMatchObject({ error: { code: "UPLOAD_INVALID" } });
   });
 
+  it("replaces stored source, secret, and provider text with canonical customer copy", async () => {
+    const uploaded = await upload("Failure boundary", new TextEncoder().encode("failure"));
+    const created = await uploaded.app.inject({
+      method: "POST",
+      url: "/v1/deployments",
+      headers: { ...actorHeaders, "idempotency-key": "failure-boundary" },
+      payload: { schemaVersion: 1, versionId: uploaded.intent.versionId },
+    });
+    const deployment = deploymentCreatedV1Schema.parse(created.json());
+    const internalText = "VERCEL_TOKEN=secret-value <script>raw source</script> provider log";
+    await new DeploymentRepository(database).transition({
+      id: deployment.deploymentId,
+      to: "FAILED",
+      errorCode: "PROVIDER_DEPLOYMENT_FAILED",
+      errorSummary: internalText,
+      errorRetryable: true,
+      errorRetryAfterSeconds: 90,
+    });
+    await new DeploymentEventRepository(database).append({
+      id: "event-sensitive-provider-failure",
+      deploymentId: deployment.deploymentId,
+      type: "error",
+      code: "PROVIDER_DEPLOYMENT_FAILED",
+      customerMessage: internalText,
+      internalMetadata: { logs: [internalText] },
+    });
+
+    const response = await uploaded.app.inject({
+      method: "GET",
+      url: `/v1/deployments/${deployment.deploymentId}`,
+      headers: actorHeaders,
+    });
+    const serialized = response.body;
+    const status = deploymentStatusV1Schema.parse(response.json());
+    expect(status.error).toMatchObject({
+      code: "PROVIDER_DEPLOYMENT_FAILED",
+      message: "The approved project could not be published.",
+      guidance: "Try again in about 2 minutes.",
+      retryable: true,
+      retryAfterSeconds: 90,
+    });
+    expect(status.events.at(-1)?.customerMessage)
+      .toBe("The approved project could not be published.");
+    expect(serialized).not.toContain("secret-value");
+    expect(serialized).not.toContain("raw source");
+    expect(serialized).not.toContain("provider log");
+    expect(serialized).not.toContain("internalMetadata");
+  });
+
   it("authorizes, audits, and enforces operator suspension", async () => {
     const uploaded = await upload("Suspension test", new TextEncoder().encode("suspend"));
     const create = await uploaded.app.inject({
@@ -232,6 +282,26 @@ describe("control-plane API", () => {
         providerCleanupStatus: "COMPLETED",
       }),
     ]);
+
+    const deniedOperations = await operatorApp.inject({
+      method: "GET",
+      url: "/v1/operator/operations",
+    });
+    expect(deniedOperations.statusCode).toBe(401);
+    const operations = await operatorApp.inject({
+      method: "GET",
+      url: "/v1/operator/operations",
+      headers: {
+        "x-pocketcloud-operator-key": "operator-secret",
+        "x-pocketcloud-operator-id": "ops@example.com",
+      },
+    });
+    expect(operations.statusCode).toBe(200);
+    expect(operations.json()).toMatchObject({
+      suspendedApps: 1,
+      storage: { retainedArtifacts: 1 },
+      queue: { queued: 0, claimed: 0 },
+    });
 
     const blockedUpload = await operatorApp.inject({
       method: "POST",

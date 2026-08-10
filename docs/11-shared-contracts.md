@@ -378,6 +378,11 @@ keys, never signed URLs.
 after `READY`, and stable error information. It deliberately excludes provider logs, Sandbox
 details, internal event metadata, credentials, and raw source.
 
+PC-302 adds optional `guidance` to the error object in `DeploymentStatusV1` and
+`CustomerErrorResponseV1`. Producers provide canonical next-action text; the optional shape keeps
+older serialized responses valid. Terminal deployment persistence also records the exact retryable
+flag and optional retry-after delay so the API does not infer provider retry behavior from a code.
+
 ## Interface-change process
 
 When a story needs to change a shared contract:

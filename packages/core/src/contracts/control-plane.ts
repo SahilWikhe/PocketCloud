@@ -77,6 +77,7 @@ export const deploymentStatusV1Schema = z.object({
   error: z.object({
     code: pocketCloudErrorCodeSchema,
     message: z.string().min(1),
+    guidance: z.string().min(1).optional(),
     retryable: z.boolean(),
     retryAfterSeconds: z.number().int().nonnegative().optional(),
   }).nullable(),
@@ -88,6 +89,7 @@ export const customerErrorResponseV1Schema = z.object({
   error: z.object({
     code: pocketCloudErrorCodeSchema,
     message: z.string().min(1),
+    guidance: z.string().min(1).optional(),
     retryable: z.boolean(),
     retryAfterSeconds: z.number().int().nonnegative().optional(),
     correlationId: identifierSchema,
