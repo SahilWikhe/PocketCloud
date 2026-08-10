@@ -55,7 +55,7 @@ deterministic normalization still works and AI repair remains disabled.
 ## Security impact
 
 - Selected input remains capped at 16 KiB per file, 48 KiB total, and 12,000 reported input tokens.
-- Output remains capped at 2,000 tokens, five text operations, and 64 KiB of patched text.
+- Output remains capped at 2,000 tokens, twenty text operations, and 64 KiB of patched text.
 - Secret-bearing paths and binary files remain excluded before the provider call.
 - Customer file contents are explicitly treated as untrusted data, not model instructions.
 - Commands, tools, network access, package installation, and AI-generated deployment authority are

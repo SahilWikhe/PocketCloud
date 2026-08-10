@@ -206,7 +206,7 @@ The repair flow:
   and a 12,000 estimated/reported input-token cap.
 - Excludes secret-like paths and binary content.
 - Makes exactly one structured request.
-- Accepts at most five `create`, `replace`, or `delete` text operations.
+- Accepts at most twenty `create`, `replace`, or `delete` text operations.
 - Rejects schema extras such as commands, unsafe or duplicate paths, secret paths, unsupported
   types, binary text output, missing/overwritten targets, root entry deletion, output above 64 KiB,
   and output usage above 2,000 tokens.

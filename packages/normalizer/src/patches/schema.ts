@@ -1,6 +1,8 @@
 import { normalizedRelativePathSchema } from "@pocketcloud/core";
 import { z } from "zod";
 
+export const maximumAiPatchOperations = 20;
+
 export const aiPatchOperationSchema = z.object({
   operation: z.enum(["create", "replace", "delete"]),
   path: normalizedRelativePathSchema,
@@ -16,7 +18,7 @@ export const aiPatchOperationSchema = z.object({
 
 export const aiPatchResponseSchema = z.object({
   schemaVersion: z.literal(1),
-  patches: z.array(aiPatchOperationSchema).max(5),
+  patches: z.array(aiPatchOperationSchema).max(maximumAiPatchOperations),
   usage: z.object({
     inputTokens: z.number().int().nonnegative(),
     outputTokens: z.number().int().nonnegative(),

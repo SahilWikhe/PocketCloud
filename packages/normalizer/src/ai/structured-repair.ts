@@ -13,7 +13,10 @@ import {
 } from "@pocketcloud/core/execution";
 
 import { createNormalizationChange, sha256 } from "../change-log/change";
-import { aiPatchResponseSchema } from "../patches/schema";
+import {
+  aiPatchResponseSchema,
+  maximumAiPatchOperations,
+} from "../patches/schema";
 
 const maximumSelectedFileBytes = 16 * 1024;
 const maximumSelectedBytes = 48 * 1024;
@@ -30,7 +33,11 @@ export interface AiRepairRequest {
   schemaVersion: 1;
   files: readonly { path: string; content: string }[];
   findings: readonly Pick<StaticProjectFinding, "code" | "path" | "reference" | "summary">[];
-  limits: { maximumPatches: 5; maximumPatchedBytes: number; commandsAllowed: false };
+  limits: {
+    maximumPatches: typeof maximumAiPatchOperations;
+    maximumPatchedBytes: number;
+    commandsAllowed: false;
+  };
 }
 
 export interface AiRepairClient {
@@ -165,7 +172,11 @@ export async function repairStaticProjectWithAi(
         ...(reference === undefined ? {} : { reference }),
         summary,
       })),
-      limits: { maximumPatches: 5, maximumPatchedBytes, commandsAllowed: false },
+      limits: {
+        maximumPatches: maximumAiPatchOperations,
+        maximumPatchedBytes,
+        commandsAllowed: false,
+      },
     });
   } catch {
     throw new PocketCloudError({

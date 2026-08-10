@@ -1,4 +1,7 @@
-import type { AiRepairRequest } from "@pocketcloud/normalizer";
+import {
+  maximumAiPatchOperations,
+  type AiRepairRequest,
+} from "@pocketcloud/normalizer";
 import { MockLanguageModelV4 } from "ai/test";
 import { describe, expect, it, vi } from "vitest";
 
@@ -23,7 +26,7 @@ const request: AiRepairRequest = {
     summary: "A local development URL cannot work after publishing.",
   }],
   limits: {
-    maximumPatches: 5,
+    maximumPatches: maximumAiPatchOperations,
     maximumPatchedBytes: 65_536,
     commandsAllowed: false,
   },
