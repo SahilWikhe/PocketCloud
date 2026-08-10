@@ -14,6 +14,7 @@ import {
   type DeploymentWorker,
   type DeploymentWorkerLogger,
 } from "./integration/deployment-worker";
+import { aiRepairClientFromEnvironment } from "./integration/vercel-ai-repair";
 import { ArtifactRetentionService } from "./operations/artifact-retention";
 
 function requiredEnvironmentValue(environment: NodeJS.ProcessEnv, name: string): string {
@@ -56,10 +57,12 @@ export function createProductionDeploymentWorkerRuntime(
   const database = createNeonDatabaseFromEnvironment(environment);
   const storage = createStorage(environment);
   const policy = pilotWorkerPolicyFromEnvironment(environment);
+  const aiClient = aiRepairClientFromEnvironment(environment);
   const worker = createDeploymentWorker({
     database,
     storage,
     executionProvider: new VercelSandboxExecutionProvider(),
+    ...(aiClient === undefined ? {} : { aiClient }),
     deploymentProvider: new VercelDeploymentProvider({
       token: requiredEnvironmentValue(environment, "VERCEL_TOKEN"),
       projectName: requiredEnvironmentValue(environment, "VERCEL_PROJECT_NAME"),
