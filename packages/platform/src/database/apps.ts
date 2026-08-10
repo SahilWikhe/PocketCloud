@@ -66,4 +66,15 @@ export class AppRepository {
     );
     return result.rows[0] ? mapApp(result.rows[0]) : null;
   }
+
+  async promoteVersion(id: string, versionId: string): Promise<AppRecord | null> {
+    const result = await this.sql.query<AppRow>(
+      `UPDATE apps
+       SET active_version_id = $2, updated_at = now()
+       WHERE id = $1 AND status = 'ACTIVE'
+       RETURNING *`,
+      [id, versionId],
+    );
+    return result.rows[0] ? mapApp(result.rows[0]) : null;
+  }
 }

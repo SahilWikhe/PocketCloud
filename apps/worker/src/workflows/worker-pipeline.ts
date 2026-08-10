@@ -15,6 +15,7 @@ import {
   type NormalizationChangeV1,
   type ProviderDeployment,
   type PocketCloudErrorShape,
+  type ProjectPlanV1,
   type UsageSink,
 } from "@pocketcloud/core";
 import type { StaticProjectFile } from "@pocketcloud/core/execution";
@@ -42,6 +43,7 @@ export interface WorkerCheckpoint {
   sandboxCreatedAtMilliseconds?: number;
   normalizedArtifactId?: string;
   providerDeployment?: ProviderDeployment;
+  projectPlan?: ProjectPlanV1;
   changes?: readonly NormalizationChangeV1[];
   verifiedUrl?: string;
   terminalState?: "READY" | "FAILED" | "CANCELLED";
@@ -313,6 +315,7 @@ export class WorkerPipeline {
 
         await advance("ANALYZING");
         const analysis = await this.options.processor.analyze(archive);
+        await save({ projectPlan: analysis.plan });
         checkDeadline();
         await checkCancellation();
         await advance("NORMALIZING");

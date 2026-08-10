@@ -6,6 +6,7 @@ import type { SqlExecutor } from "./client";
 import { DeploymentRepository } from "./deployments";
 import { DeploymentEventRepository } from "./events";
 import { DeploymentJobRepository } from "./jobs";
+import { NormalizationChangeRepository } from "./changes";
 import { VersionRepository } from "./versions";
 import { createMigratedTestDatabase, type PGliteTestDatabase } from "../testing/pglite";
 
@@ -110,6 +111,30 @@ describe("PostgreSQL repositories", () => {
     const persisted = await events.listCustomerVisible("deployment-1");
     expect(persisted.map((event) => event.sequence)).toEqual([1, 2, 3]);
     expect(persisted.every((event) => event.internalMetadata === undefined)).toBe(true);
+
+    await new AppRepository(database).create({
+      id: "app-2",
+      actorKey: "actor-2",
+      name: "Second demo",
+      slug: "second-demo",
+    });
+    await new VersionRepository(database).createPending({ id: "version-2", appId: "app-2" });
+    const identicalChange = {
+      schemaVersion: 1 as const,
+      changeId: "change-same-content",
+      source: "deterministic" as const,
+      ruleCode: "MOVE_WRAPPER",
+      operation: "move" as const,
+      path: "index.html",
+      previousPath: "site/index.html",
+      summary: "Moved the static site into the deployment root.",
+      requiresCustomerAttention: false,
+    };
+    const changes = new NormalizationChangeRepository(database);
+    await changes.record("version-1", identicalChange);
+    await changes.record("version-2", identicalChange);
+    expect(await changes.listForVersion("version-1")).toEqual([identicalChange]);
+    expect(await changes.listForVersion("version-2")).toEqual([identicalChange]);
   });
 
   it("allows only one worker to claim a queued job", async () => {

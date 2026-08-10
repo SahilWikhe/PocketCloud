@@ -34,6 +34,29 @@ function mapChange(row: ChangeRow): NormalizationChangeV1 {
 export class NormalizationChangeRepository {
   constructor(private readonly sql: SqlExecutor) {}
 
+  async record(versionId: string, change: NormalizationChangeV1): Promise<void> {
+    await this.sql.query(
+      `INSERT INTO normalization_changes (
+         id, version_id, source, rule_code, operation, path, previous_path,
+         before_sha256, after_sha256, summary, requires_customer_attention
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       ON CONFLICT (version_id, id) DO NOTHING`,
+      [
+        change.changeId,
+        versionId,
+        change.source,
+        change.ruleCode,
+        change.operation,
+        change.path,
+        change.previousPath ?? null,
+        change.beforeSha256 ?? null,
+        change.afterSha256 ?? null,
+        change.summary,
+        change.requiresCustomerAttention,
+      ],
+    );
+  }
+
   async listForVersion(versionId: string): Promise<readonly NormalizationChangeV1[]> {
     const result = await this.sql.query<ChangeRow>(
       `SELECT id, source, rule_code, operation, path, previous_path,

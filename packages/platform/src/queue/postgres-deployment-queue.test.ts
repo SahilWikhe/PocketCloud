@@ -19,7 +19,7 @@ describe("PostgresDeploymentQueue", () => {
     await database.close();
   });
 
-  it("hands Builder B a validated shared DeploymentJob payload", async () => {
+  async function seedQueuedDeployment(): Promise<void> {
     await database.transaction(async (transaction) => {
       await new AppRepository(transaction).create({
         id: "app-1",
@@ -62,6 +62,10 @@ describe("PostgresDeploymentQueue", () => {
         deploymentId: "deployment-1",
       });
     });
+  }
+
+  it("hands Builder B a validated shared DeploymentJob payload", async () => {
+    await seedQueuedDeployment();
 
     const claim = await new PostgresDeploymentQueue(database, 3).claim("worker-a", 30);
     expect(claim).toMatchObject({
@@ -77,5 +81,24 @@ describe("PostgresDeploymentQueue", () => {
         maxAttempts: 3,
       },
     });
+  });
+
+  it("reclaims an expired terminal job without exceeding its attempt budget", async () => {
+    await seedQueuedDeployment();
+    await database.query(
+      `UPDATE deployment_jobs
+       SET status = 'CLAIMED', attempt = max_attempts, claimed_by = 'dead-worker',
+           claim_expires_at = now() - interval '1 second'
+       WHERE id = 'job-1'`,
+    );
+    await database.query("UPDATE deployments SET status = 'READY' WHERE id = 'deployment-1'");
+
+    const queue = new PostgresDeploymentQueue(database, 3);
+    const claim = await queue.claim("recovery-worker", 30);
+    expect(claim).toMatchObject({
+      workerId: "recovery-worker",
+      job: { jobId: "job-1", deploymentId: "deployment-1", attempt: 3, maxAttempts: 3 },
+    });
+    await expect(queue.complete("job-1", "recovery-worker")).resolves.toBe(true);
   });
 });

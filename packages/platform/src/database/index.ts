@@ -11,3 +11,4 @@ export * from "./operator-actions";
 export * from "./uploads";
 export * from "./usage";
 export * from "./versions";
+export * from "./worker-checkpoints";

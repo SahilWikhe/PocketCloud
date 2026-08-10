@@ -2,6 +2,7 @@ import {
   createNeonDatabaseFromEnvironment,
   VercelBlobPrivateObjectStorage,
 } from "@pocketcloud/platform";
+import { VercelDeploymentProvider } from "@pocketcloud/deployment";
 
 import { buildApi } from "./build-app";
 
@@ -16,6 +17,24 @@ const operatorApiKey = process.env.OPERATOR_API_KEY;
 if (operatorApiKey !== undefined && operatorApiKey.length < 32) {
   throw new Error("OPERATOR_API_KEY must contain at least 32 characters when configured");
 }
+if (operatorApiKey !== undefined && (!process.env.VERCEL_TOKEN || !process.env.VERCEL_PROJECT_NAME)) {
+  throw new Error(
+    "VERCEL_TOKEN and VERCEL_PROJECT_NAME are required when operator controls are configured",
+  );
+}
+const operatorDeploymentProvider =
+  operatorApiKey === undefined
+    ? undefined
+    : new VercelDeploymentProvider({
+        token: process.env.VERCEL_TOKEN!,
+        projectName: process.env.VERCEL_PROJECT_NAME!,
+        ...(process.env.VERCEL_PROJECT_ID === undefined
+          ? {}
+          : { projectId: process.env.VERCEL_PROJECT_ID }),
+        ...(process.env.VERCEL_TEAM_ID === undefined
+          ? {}
+          : { teamId: process.env.VERCEL_TEAM_ID }),
+      });
 const app = buildApi({
   database,
   storage,
@@ -27,13 +46,7 @@ const app = buildApi({
     : {
         operator: {
           apiKey: operatorApiKey,
-          deploymentProvider: {
-            async remove() {
-              throw new Error(
-                "The deployment removal provider is not configured until PC-206 is integrated.",
-              );
-            },
-          },
+          deploymentProvider: operatorDeploymentProvider!,
         },
       }),
 });

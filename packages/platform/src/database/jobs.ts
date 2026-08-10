@@ -59,7 +59,7 @@ export class DeploymentJobRepository {
   }): Promise<DeploymentJobRecord | null> {
     const result = await this.sql.query<JobRow>(
       `WITH candidate AS (
-         SELECT job.id
+         SELECT job.id, deployment.status AS deployment_status
          FROM deployment_jobs AS job
          JOIN deployments AS deployment ON deployment.id = job.deployment_id
          JOIN apps AS app ON app.id = deployment.app_id
@@ -67,8 +67,15 @@ export class DeploymentJobRepository {
            (job.status = 'QUEUED' AND job.available_at <= now())
            OR (job.status = 'CLAIMED' AND job.claim_expires_at <= now())
          )
-         AND job.attempt < job.max_attempts
-         AND deployment.status IN ('QUEUED', 'CLAIMED')
+         AND (
+           job.attempt < job.max_attempts
+           OR deployment.status IN ('READY', 'FAILED', 'CANCELLED')
+         )
+         AND deployment.status IN (
+           'QUEUED', 'CLAIMED', 'SANDBOX_STARTING', 'ANALYZING', 'NORMALIZING',
+           'VALIDATING', 'READY_TO_DEPLOY', 'DEPLOYING', 'VERIFYING',
+           'READY', 'FAILED', 'CANCELLED'
+         )
          AND app.status = 'ACTIVE'
          AND (
            SELECT COUNT(*)
@@ -89,7 +96,10 @@ export class DeploymentJobRepository {
        )
        UPDATE deployment_jobs AS job
        SET status = 'CLAIMED',
-           attempt = job.attempt + 1,
+           attempt = CASE
+             WHEN candidate.deployment_status IN ('READY', 'FAILED', 'CANCELLED') THEN job.attempt
+             ELSE job.attempt + 1
+           END,
            claimed_by = $1,
            claim_expires_at = now() + ($2 * interval '1 second'),
            updated_at = now()
@@ -141,6 +151,35 @@ export class DeploymentJobRepository {
            updated_at = now()
        WHERE id = $1 AND status = 'CLAIMED' AND claimed_by = $2`,
       [input.jobId, input.workerId, input.errorCode, input.delaySeconds],
+    );
+    return result.rowCount === 1;
+  }
+
+  async fail(input: {
+    jobId: string;
+    workerId: string;
+    errorCode: PocketCloudErrorCode;
+  }): Promise<boolean> {
+    const result = await this.sql.query(
+      `UPDATE deployment_jobs
+       SET status = 'FAILED',
+           claimed_by = NULL,
+           claim_expires_at = NULL,
+           last_error_code = $3,
+           updated_at = now()
+       WHERE id = $1 AND status = 'CLAIMED' AND claimed_by = $2`,
+      [input.jobId, input.workerId, input.errorCode],
+    );
+    return result.rowCount === 1;
+  }
+
+  async cancel(jobId: string, workerId: string): Promise<boolean> {
+    const result = await this.sql.query(
+      `UPDATE deployment_jobs
+       SET status = 'CANCELLED', claimed_by = NULL, claim_expires_at = NULL, updated_at = now()
+       WHERE id = $1
+         AND ((status = 'CLAIMED' AND claimed_by = $2) OR status = 'CANCELLED')`,
+      [jobId, workerId],
     );
     return result.rowCount === 1;
   }

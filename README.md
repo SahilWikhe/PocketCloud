@@ -2,9 +2,9 @@
 
 PocketCloud is a deployment platform for small, AI-generated applications. Its goal is to make publishing an app feel as simple as sharing a document: upload a project, let PocketCloud understand and repair it, and receive a working link without learning cloud infrastructure.
 
-> Current status: the control plane and Builder B execution-plane packages are implemented.
-> End-to-end production composition remains in `PC-301`: the API/queue, durable platform sinks,
-> Vercel providers, and worker pipeline still need to be wired through their public interfaces.
+> Current status: the control plane, execution plane, and `PC-301` end-to-end production
+> composition are implemented. Customer-visible failure-matrix coverage remains in `PC-302`,
+> followed by the `PC-303` pilot-readiness review.
 
 ## Product promise
 
@@ -82,9 +82,10 @@ pnpm build         # production web build and workspace build checks
 private store. The API hashes prototype actor identifiers before persistence; raw browser IDs
 and source IPs are not used as durable customer identity.
 
-The control plane can accept, quarantine, and queue an upload. The execution plane can safely
-inspect, normalize, deploy, verify, and clean up a static project through injected interfaces.
-It will not reach a live URL from the production entry points until `PC-301` connects both lanes.
+The control plane accepts, quarantines, and queues an upload. The worker claims the durable job,
+connects the public platform and execution interfaces, and records the verified result so a
+reconnected dashboard can display the live URL. Production startup requires the trusted-host
+Vercel, Blob, and Neon credentials documented in `.env.example`; none are copied into a Sandbox.
 
 ## Documentation map
 
