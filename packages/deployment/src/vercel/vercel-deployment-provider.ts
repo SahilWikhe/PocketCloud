@@ -38,7 +38,11 @@ interface VercelDeploymentSdk {
   createDeployment(
     request: VercelCreateRequest,
     options?: { timeoutMs?: number; headers?: Record<string, string> },
-  ): Promise<{ id: string; url?: string; projectId?: string }>;
+  ): Promise<{ id: string; url?: string; alias?: string[]; projectId?: string }>;
+  getDeployments(
+    request: { teamId?: string; projectId?: string; app?: string; limit: number },
+    options?: { timeoutMs?: number },
+  ): Promise<{ deployments: { uid: string; url: string }[] }>;
   getDeployment(
     request: { idOrUrl: string; teamId?: string },
     options?: { timeoutMs?: number },
@@ -346,8 +350,19 @@ export class VercelDeploymentProvider implements DeploymentProvider {
         headers: { "x-vercel-idempotency-key": input.idempotencyKey },
       });
       if (!identifierSchema.safeParse(created.id).success) throw new Error("Vercel returned an invalid deployment ID");
-      const url = candidateUrl(created.url);
       const providerProjectId = created.projectId ?? this.projectId;
+      let url = candidateUrl(created.url ?? created.alias?.[0]);
+      if (url === undefined) {
+        const listed = await this.sdk.getDeployments(withTeam({
+          ...(providerProjectId === undefined
+            ? { app: this.projectName }
+            : { projectId: providerProjectId }),
+          limit: 20,
+        }, this.teamId), { timeoutMs: this.requestTimeoutMilliseconds });
+        url = candidateUrl(
+          listed.deployments.find((deployment) => deployment.uid === created.id)?.url,
+        );
+      }
       return {
         provider: "vercel",
         providerDeploymentId: created.id,

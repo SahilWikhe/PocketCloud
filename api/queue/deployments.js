@@ -1,1 +1,3 @@
-export { handleDeploymentQueue as default } from "../../.vercel-functions/deployment-queue.mjs";
+import deploymentQueue from "../../.vercel-functions/deployment-queue.cjs";
+
+export default deploymentQueue.handleDeploymentQueue;

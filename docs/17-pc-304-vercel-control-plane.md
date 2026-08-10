@@ -51,6 +51,29 @@ esbuild bundles the TypeScript monorepo implementation into ignored `.vercel-fun
 This avoids changing every internal ESM import solely for Vercel's Function compiler while keeping
 the generated multi-megabyte bundles out of Git.
 
+### Hosted runtime hotfix
+
+The first hosted Preview exposed two issues that local compilation did not catch:
+
+1. Vercel treated the literal `api/v1/[...path].js` entry as a static Function path, so public API
+   requests returned Vercel `404 NOT_FOUND` before Fastify ran.
+2. The ESM bundle reached the CommonJS `pg` dependency and failed during startup with
+   `Dynamic require of "events" is not supported`.
+3. A limited Vercel project token successfully created a customer deployment but omitted its URL
+   from that create response, leaving the worker without an address to verify.
+
+The hotfix replaces that entry with one fixed `api/v1.js` gateway. The public rewrite passes the
+wildcard as an internal query parameter, and the gateway reconstructs the original `/v1/**` URL for
+Fastify. Function bundles now use CommonJS, matching Node dependencies such as `pg`. The build
+cleans the ignored bundle directory first so an obsolete ESM artifact cannot survive locally.
+When a limited create response omits the URL, the provider lists recent deployments in the approved
+project and selects only the exact deployment ID it just created. This preserves the existing
+project allowlist and does not guess or accept a different deployment address.
+
+`vercel/api-path.test.ts` covers rewrite reconstruction and query preservation.
+`scripts/test-vercel-function-bundles.mjs` imports every generated Function bundle and asserts that
+its handler loads successfully, which directly guards against the production startup failure.
+
 ## Files owned and changed
 
 ```text
@@ -107,11 +130,14 @@ PocketCloud control-plane project.
 ```text
 pnpm lint                 passed
 pnpm typecheck            passed
-pnpm test                 129 passed; 3 live-provider tests skipped
+pnpm test                 134 passed; 3 live-provider tests skipped
 pnpm build                passed
 pnpm build:vercel         passed
 vercel build --target=preview
                           passed; UI and all three Functions emitted
+pnpm test:vercel          passed; route tests and all three generated Function bundles load
+hosted Preview API probe  passed; PocketCloud validation response replaced Vercel 404/500
+hosted ZIP-to-link smoke  passed; deployment reached READY and generated page returned HTTP 200
 ```
 
 Automated tests use PGlite, in-memory storage, and fake providers. The Vercel build reads project
@@ -142,8 +168,6 @@ deployment usage remains subject to the owner's provider plan and PC-303 spendin
 
 - Vercel environment variables and Neon migrations are an owner-controlled launch step and are not
   committed by this story.
-- A hosted live ZIP run is not performed until the branch has a Preview deployment with the required
-  environment variables.
 - The current static pipeline may need multiple Queue deliveries when provider publishing exceeds
   one 35-second wait window; checkpointing prevents duplicate normalization or deployment creation.
 - Vercel Queue is currently beta. PostgreSQL state keeps the product recoverable, but a future
