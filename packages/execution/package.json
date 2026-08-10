@@ -9,9 +9,11 @@
   "scripts": {
     "build": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
+    "test:integration:vercel": "POCKETCLOUD_RUN_VERCEL_SANDBOX_INTEGRATION=1 vitest run src/vercel-sandbox-provider.integration.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@pocketcloud/core": "workspace:*"
+    "@pocketcloud/core": "workspace:*",
+    "@vercel/sandbox": "3.0.0"
   }
 }
