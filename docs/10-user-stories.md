@@ -18,7 +18,7 @@ Story sizes are relative:
 |---|---|---|
 | Builder A | Control Plane | PC-001, PC-002, PC-101 through PC-106 |
 | Builder B | Execution Plane | PC-200, PC-201 through PC-208 |
-| Both, one designated author | Integration | PC-301 through PC-303 |
+| Both, one designated author | Integration | PC-301 through PC-304 |
 
 The two builders should exchange review responsibility: Builder A reviews execution-plane integration seams; Builder B reviews control-plane job and artifact contracts.
 
@@ -46,6 +46,7 @@ The two builders should exchange review responsibility: Builder A reviews execut
 | PC-301 | Connect the end-to-end deployment flow | A author, B reviewer | L | PC-102 through PC-105, PC-208 | None |
 | PC-302 | Cover customer-visible success and failures | B author, A reviewer | M | PC-301 | None |
 | PC-303 | Complete pilot readiness review | Both | M | PC-106, PC-302 | None |
+| PC-304 | Run the control plane on Vercel | A author, B reviewer | L | PC-301, PC-303 software controls | None |
 
 ## Foundation stories
 
@@ -597,6 +598,29 @@ apps/worker/**
 - Operator dashboard or equivalent query exposes queue, failure, Sandbox, AI, storage, and cleanup metrics.
 - Security language says `PLATFORM_CHECKS_PASSED`, never malware-free.
 - All external security engines remain clearly marked TODO.
+
+### PC-304 — Run the control plane on Vercel
+
+**User story**
+
+> As a customer, I want the hosted PocketCloud page to accept my ZIP and keep processing after the HTTP request ends so I receive a link without the team operating an always-on server.
+
+**Owner:** Builder A authors integration; Builder B reviews worker and provider wiring
+**Size:** L
+**Dependencies:** PC-301 and the repository-enforced PC-303 controls
+
+**Acceptance criteria**
+
+- The static dashboard and same-origin `/v1` API deploy from one Vercel project.
+- Deployment creation publishes a versioned deployment-ID message only after the Neon transaction commits.
+- A private Vercel Queue consumer claims only the requested durable Neon job.
+- At-least-once delivery cannot duplicate a provider deployment.
+- Retryable work is checkpointed in Neon and redelivered with bounded backoff.
+- Each Vercel worker invocation fits a 60-second Function window.
+- Retention runs daily behind Vercel cron authentication.
+- Local API and standalone worker commands remain usable.
+- `pnpm check`, `pnpm build`, and `vercel build` pass without production secrets in CI.
+- No credential, generated bundle, Vercel link metadata, or pulled environment file is committed.
 
 ## Suggested first-week sequence
 

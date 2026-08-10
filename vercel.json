@@ -1,5 +1,31 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm --filter @pocketcloud/web build",
-  "outputDirectory": "apps/web/dist"
+  "buildCommand": "pnpm build:vercel",
+  "outputDirectory": "apps/web/dist",
+  "regions": ["iad1"],
+  "rewrites": [
+    { "source": "/v1/:path*", "destination": "/api/v1/:path*" }
+  ],
+  "functions": {
+    "api/v1/[...path].js": {
+      "maxDuration": 60
+    },
+    "api/queue/deployments.js": {
+      "maxDuration": 60,
+      "experimentalTriggers": [
+        {
+          "type": "queue/v2beta",
+          "topic": "pocketcloud-deployments",
+          "retryAfterSeconds": 5,
+          "initialDelaySeconds": 0
+        }
+      ]
+    },
+    "api/cron/retention.js": {
+      "maxDuration": 60
+    }
+  },
+  "crons": [
+    { "path": "/api/cron/retention", "schedule": "0 3 * * *" }
+  ]
 }

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { artifactManifestV1Schema } from "./artifact";
 import { deploymentEventV1Schema } from "./events";
-import { deploymentJobV1Schema } from "./job";
+import { deploymentDispatchV1Schema, deploymentJobV1Schema } from "./job";
 import { normalizationChangeV1Schema } from "./normalization";
 import { projectPlanV1Schema } from "./project-plan";
 import { usageReportV1Schema } from "./usage";
@@ -12,6 +12,10 @@ const hash = "a".repeat(64);
 
 describe("shared contract serialization", () => {
   it.each([
+    [deploymentDispatchV1Schema, {
+      schemaVersion: 1,
+      deploymentId: "deployment-1",
+    }],
     [deploymentJobV1Schema, {
       schemaVersion: 1,
       jobId: "job-1",

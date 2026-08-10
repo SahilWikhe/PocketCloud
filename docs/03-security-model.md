@@ -75,6 +75,11 @@ Untrusted published zone
 
 The control plane never executes uploaded code. The published zone never receives control-plane cookies or credentials.
 
+The production deployment consumer is a private Vercel Queue Function with no public route. Queue
+messages contain only a deployment ID and never contain source, signed storage URLs, or provider
+credentials. Scheduled retention uses a separate endpoint authenticated with `CRON_SECRET` using a
+constant-time comparison.
+
 ## Code-level controls implemented in the MVP
 
 ### Private quarantine

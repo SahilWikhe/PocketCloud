@@ -15,7 +15,7 @@ Customer
 Web dashboard
    |
    v
-API / control plane -----> Neon PostgreSQL
+Vercel API Function -----> Neon PostgreSQL
    |                              |
    |                              +-- apps, versions, deployments
    |                              +-- job and usage records
@@ -24,8 +24,11 @@ API / control plane -----> Neon PostgreSQL
    |                              +-- original ZIP
    |                              +-- normalized artifact
    |
-   v
-Background worker
+   |
+   +---> Vercel Queue
+              |
+              v
+Private worker Function
    |
    +---> Vercel Sandbox
    |       +-- extract
@@ -125,7 +128,8 @@ The API should not hold an HTTP request open through normalization and deploymen
 
 ### Background worker
 
-The worker owns long-running orchestration:
+The worker owns durable orchestration. In production, Vercel Queue invokes it as a private,
+bounded Function. Neon job claims and checkpoints let a later invocation resume safely:
 
 - Claim one deployment job idempotently
 - Create and configure a temporary Sandbox
@@ -139,6 +143,10 @@ The worker owns long-running orchestration:
 - Perform a final HTTP smoke check
 - Record events, usage, and terminal state
 - Stop the Sandbox in a `finally`-equivalent cleanup path
+
+The local `apps/worker` process may still poll PostgreSQL for development. Production does not run
+an always-on server. Each queue message contains only a versioned deployment ID; the worker claims
+the full job from Neon before doing expensive work.
 
 ### Core package
 
@@ -286,11 +294,19 @@ Files move from an untrusted zone to a trusted operation only as bytes through a
 
 ## Scaling philosophy
 
-The first version scales by controlling concurrency, not by creating many services. PostgreSQL remains the system of record. Object storage holds artifacts. A job boundary separates HTTP traffic from deployment work. Redis, managed queues, independent worker pools, and additional providers are introduced only in response to real load or reliability requirements.
+The first version scales by controlling concurrency, not by creating many services. PostgreSQL
+remains the system of record and enforces global and per-actor job claims. Object storage holds
+artifacts. Vercel Queue separates HTTP traffic from deployment work and supplies managed delivery;
+duplicate delivery is safe because Neon claims and provider deployment IDs are idempotent. Vercel
+scales Function invocations, while the database concurrency rule protects Sandbox, deployment, and
+rate-limited provider budgets. Redis, independent worker pools, and additional providers are added
+only in response to measured load or reliability requirements.
 
 ## Relevant vendor references
 
 - [Vercel Sandbox](https://vercel.com/docs/sandbox)
 - [Vercel deployments](https://vercel.com/docs/deployments/overview)
+- [Vercel Queues](https://vercel.com/docs/queues)
+- [Vercel Functions](https://vercel.com/docs/functions)
 - [Vercel Marketplace storage](https://vercel.com/docs/marketplace-storage)
 - [Neon connection pooling](https://neon.com/docs/connect/connection-pooling)

@@ -20,11 +20,28 @@ export class PostgresDeploymentQueue {
   ) {}
 
   async claim(workerId: string, leaseSeconds = 30): Promise<ClaimedDeploymentJob | null> {
+    return this.claimJob(workerId, leaseSeconds);
+  }
+
+  async claimDeployment(
+    deploymentId: string,
+    workerId: string,
+    leaseSeconds = 30,
+  ): Promise<ClaimedDeploymentJob | null> {
+    return this.claimJob(workerId, leaseSeconds, deploymentId);
+  }
+
+  private async claimJob(
+    workerId: string,
+    leaseSeconds: number,
+    deploymentId?: string,
+  ): Promise<ClaimedDeploymentJob | null> {
     return this.database.transaction(async (transaction) => {
       const claimed = await new DeploymentJobRepository(transaction).claimNext({
         workerId,
         leaseSeconds,
         globalConcurrency: this.globalConcurrency,
+        ...(deploymentId === undefined ? {} : { deploymentId }),
       });
       if (!claimed || !claimed.claimExpiresAt) {
         return null;

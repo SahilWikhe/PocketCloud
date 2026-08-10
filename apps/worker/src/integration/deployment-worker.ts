@@ -6,6 +6,7 @@ import {
 } from "@pocketcloud/core";
 import type { AiRepairClient } from "@pocketcloud/normalizer";
 import {
+  type ClaimedDeploymentJob,
   PlatformArtifactStore,
   PostgresDeploymentQueue,
   type PrivateObjectStorage,
@@ -93,6 +94,21 @@ export class DeploymentWorker {
     const claimed = await this.options.queue.claim(this.options.workerId, this.leaseSeconds);
     if (!claimed) return { status: "idle" };
 
+    return this.runClaimed(claimed);
+  }
+
+  async runDeployment(deploymentId: string): Promise<DeploymentWorkerRunResult> {
+    const claimed = await this.options.queue.claimDeployment(
+      deploymentId,
+      this.options.workerId,
+      this.leaseSeconds,
+    );
+    if (!claimed) return { status: "idle" };
+
+    return this.runClaimed(claimed);
+  }
+
+  private async runClaimed(claimed: ClaimedDeploymentJob): Promise<DeploymentWorkerRunResult> {
     const { job } = claimed;
     let heartbeatTask = Promise.resolve();
     let claimLost = false;

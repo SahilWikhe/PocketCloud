@@ -7,3 +7,5 @@ coverage/
 .DS_Store
 *.tsbuildinfo
 .vite/
+.vercel/
+.vercel-functions/
