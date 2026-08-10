@@ -75,6 +75,27 @@ Rules:
 - `attempt` is set by job delivery and cannot exceed `maxAttempts`.
 - Processing the same `jobId` more than once must not create duplicate provider deployments.
 
+## `DeploymentDispatch`
+
+Published by the hosted control plane to wake a serverless worker. It is deliberately smaller than
+`DeploymentJobV1`; Neon remains authoritative for job state, attempts, artifact IDs, actor
+concurrency, and leases.
+
+```ts
+interface DeploymentDispatchV1 {
+  schemaVersion: 1;
+  deploymentId: string;
+}
+```
+
+Rules:
+
+- The API publishes only after the deployment and durable job transaction commits.
+- The consumer validates the schema and claims the exact deployment from PostgreSQL.
+- Duplicate messages are expected and safe.
+- The message contains no artifact URL, source, actor identity, credential, or provider SDK type.
+- Retry timing may be delivered by Vercel Queue, but attempt budget and terminal state remain in PostgreSQL.
+
 ## `ProjectPlan`
 
 Produced by the analyzer and approved by deterministic policy.

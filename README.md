@@ -3,8 +3,9 @@
 PocketCloud is a deployment platform for small, AI-generated applications. Its goal is to make publishing an app feel as simple as sharing a document: upload a project, let PocketCloud understand and repair it, and receive a working link without learning cloud infrastructure.
 
 > Current status: the control plane, execution plane, `PC-301` end-to-end composition, and
-> `PC-302` customer presentation matrix are implemented. `PC-303` software controls are ready;
-> billing-owner confirmations and approved live provider tests remain mandatory pilot gates.
+> `PC-302` customer presentation matrix are implemented. `PC-304` packages the UI, API, durable
+> queue consumer, and retention job for one Vercel project. `PC-303` billing-owner confirmations
+> and approved live provider tests remain mandatory pilot gates.
 
 ## Product promise
 
@@ -22,7 +23,8 @@ The first MVP supports static HTML, CSS, and JavaScript projects uploaded as ZIP
 ## Current architectural decisions
 
 - Use a TypeScript monorepo organized as a modular monolith.
-- Run the dashboard, API, and background worker as separate applications within that monorepo.
+- Keep the dashboard, API, and worker as separate applications within the monorepo while hosting
+  them as static assets and bounded Vercel Functions for the MVP.
 - Process every upload in a temporary Vercel Sandbox, including static sites.
 - Keep the original upload immutable and work only on copies.
 - Apply deterministic repairs before requesting an AI repair.
@@ -30,7 +32,8 @@ The first MVP supports static HTML, CSS, and JavaScript projects uploaded as ZIP
 - Use Vercel as the first deployment provider, behind a small provider interface.
 - Use Neon-hosted PostgreSQL as the platform database.
 - Use private object storage, initially Vercel Blob, for uploaded and normalized artifacts.
-- Use PostgreSQL as the initial job and durable usage record; add Redis and a managed queue when traffic justifies them.
+- Use PostgreSQL as the job and durable usage system of record. Use Vercel Queues to wake bounded,
+  resumable worker Functions; add Redis only when measured traffic requires it.
 - Implement strong code-level safety controls now. Treat antivirus, malware reputation, dependency scanners, and other third-party security engines as explicit future TODOs.
 - Never describe an upload as malware-free until a real malware scanner has run. The MVP status is `PLATFORM_CHECKS_PASSED`.
 
@@ -76,16 +79,18 @@ pnpm dev:worker    # Builder B's worker shell
 pnpm --filter @pocketcloud/platform db:migrate
 pnpm check         # lint, all type checks, and all tests
 pnpm build         # production web build and workspace build checks
+pnpm build:vercel  # production UI plus bundled Vercel Function entry points
 ```
 
 `DATABASE_URL` must be a pooled Neon PostgreSQL connection string. Vercel Blob must be a
 private store. The API hashes prototype actor identifiers before persistence; raw browser IDs
 and source IPs are not used as durable customer identity.
 
-The control plane accepts, quarantines, and queues an upload. The worker claims the durable job,
-connects the public platform and execution interfaces, and records the verified result so a
-reconnected dashboard can display the live URL. Production startup requires the trusted-host
-Vercel, Blob, and Neon credentials documented in `.env.example`; none are copied into a Sandbox.
+The control plane accepts, quarantines, and queues an upload. On Vercel, a private Queue-triggered
+Function claims that exact durable job, connects the public platform and execution interfaces, and
+records the verified result so a reconnected dashboard can display the live URL. Production
+startup requires the trusted-host Vercel, Blob, and Neon credentials documented in `.env.example`;
+none are copied into a Sandbox. The standalone worker command remains available for local use.
 
 ## Documentation map
 
@@ -106,6 +111,7 @@ Vercel, Blob, and Neon credentials documented in `.env.example`; none are copied
 15. [Builder B execution-plane handoff](docs/14-builder-b-handoff.md)
 16. [Customer success and failure matrix](docs/15-customer-failure-matrix.md)
 17. [Controlled pilot readiness](docs/16-pilot-readiness.md)
+18. [PC-304 Vercel control-plane handoff](docs/17-pc-304-vercel-control-plane.md)
 
 Codex and other AI coding agents must also follow the repository-wide instructions in [AGENTS.md](AGENTS.md).
 

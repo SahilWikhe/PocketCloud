@@ -1,59 +1,13 @@
-import { randomUUID } from "node:crypto";
-
-import { VercelDeploymentProvider } from "@pocketcloud/deployment";
-import { VercelSandboxExecutionProvider } from "@pocketcloud/execution";
-import {
-  createNeonDatabaseFromEnvironment,
-  VercelBlobPrivateObjectStorage,
-} from "@pocketcloud/platform";
-
-import { createDeploymentWorker, type DeploymentWorkerLogger } from "./integration/deployment-worker";
 import { pilotWorkerPolicyFromEnvironment } from "./config/pilot-policy";
-import { ArtifactRetentionService } from "./operations/artifact-retention";
+import {
+  consoleDeploymentWorkerLogger as logger,
+  createProductionWorkerRuntime,
+} from "./runtime";
 
-function requiredEnvironmentValue(name: string): string {
-  const value = process.env[name];
-  if (!value) throw new Error(`${name} is required`);
-  return value;
-}
-
-const logger: DeploymentWorkerLogger = {
-  info(message, metadata) {
-    console.info(message, metadata ?? {});
-  },
-  warn(message, metadata) {
-    console.warn(message, metadata ?? {});
-  },
-  error(message, metadata) {
-    console.error(message, metadata ?? {});
-  },
-};
-
-const database = createNeonDatabaseFromEnvironment();
 const pilotPolicy = pilotWorkerPolicyFromEnvironment(process.env);
-const storage = new VercelBlobPrivateObjectStorage({
-  ...(process.env.BLOB_READ_WRITE_TOKEN === undefined
-    ? {}
-    : { token: process.env.BLOB_READ_WRITE_TOKEN }),
-});
-const deploymentProvider = new VercelDeploymentProvider({
-  token: requiredEnvironmentValue("VERCEL_TOKEN"),
-  projectName: requiredEnvironmentValue("VERCEL_PROJECT_NAME"),
-  ...(process.env.VERCEL_PROJECT_ID === undefined
-    ? {}
-    : { projectId: process.env.VERCEL_PROJECT_ID }),
-  ...(process.env.VERCEL_TEAM_ID === undefined ? {} : { teamId: process.env.VERCEL_TEAM_ID }),
-});
-const worker = createDeploymentWorker({
-  database,
-  storage,
-  executionProvider: new VercelSandboxExecutionProvider(),
-  deploymentProvider,
-  workerId: process.env.POCKETCLOUD_WORKER_ID ?? `worker_${randomUUID()}`,
-  globalConcurrency: pilotPolicy.globalConcurrency,
-  logger,
-});
-const retention = new ArtifactRetentionService({ database, storage, logger });
+const runtime = createProductionWorkerRuntime(process.env, logger);
+const worker = runtime.worker;
+const retention = runtime.retention;
 
 let stopping = false;
 let nextRetentionSweepAt = 0;
@@ -93,5 +47,5 @@ try {
     }
   }
 } finally {
-  await database.close();
+  await runtime.close();
 }

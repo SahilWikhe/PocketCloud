@@ -83,6 +83,28 @@ describe("PostgresDeploymentQueue", () => {
     });
   });
 
+  it("claims only the deployment requested by a serverless queue message", async () => {
+    await seedQueuedDeployment();
+
+    await expect(
+      new PostgresDeploymentQueue(database, 3).claimDeployment(
+        "another-deployment",
+        "worker-a",
+        30,
+      ),
+    ).resolves.toBeNull();
+    await expect(
+      new PostgresDeploymentQueue(database, 3).claimDeployment(
+        "deployment-1",
+        "worker-a",
+        30,
+      ),
+    ).resolves.toMatchObject({
+      workerId: "worker-a",
+      job: { deploymentId: "deployment-1" },
+    });
+  });
+
   it("reclaims an expired terminal job without exceeding its attempt budget", async () => {
     await seedQueuedDeployment();
     await database.query(

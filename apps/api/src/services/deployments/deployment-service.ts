@@ -26,17 +26,24 @@ import { presentCustomerError, presentCustomerEvent } from "./customer-presentat
 
 export interface DeploymentServiceOptions {
   database: TransactionalSqlExecutor;
+  deploymentDispatcher?: DeploymentDispatcher;
   idFactory?: IdFactory;
   quotaPolicy?: PrototypeQuotaPolicy;
 }
 
+export interface DeploymentDispatcher {
+  enqueue(deploymentId: string): Promise<void>;
+}
+
 export class DeploymentService {
   private readonly database: TransactionalSqlExecutor;
+  private readonly deploymentDispatcher: DeploymentDispatcher | undefined;
   private readonly ids: IdFactory;
   private readonly quotaPolicy: PrototypeQuotaPolicy;
 
   constructor(options: DeploymentServiceOptions) {
     this.database = options.database;
+    this.deploymentDispatcher = options.deploymentDispatcher;
     this.ids = options.idFactory ?? defaultIdFactory;
     this.quotaPolicy = options.quotaPolicy ?? defaultPrototypeQuotaPolicy;
   }
@@ -54,7 +61,7 @@ export class DeploymentService {
       });
     }
 
-    return this.database.transaction(async (transaction) => {
+    const deployment = await this.database.transaction<DeploymentCreatedV1>(async (transaction) => {
       const deployments = new DeploymentRepository(transaction);
       const quota = new QuotaRepository(transaction);
       await quota.lockActor(actorKey);
@@ -130,8 +137,11 @@ export class DeploymentService {
         quantity: 1,
       });
 
-      return { schemaVersion: 1, deploymentId: deployment.id, status: queued.status };
+      return { schemaVersion: 1 as const, deploymentId: deployment.id, status: queued.status };
     });
+
+    await this.deploymentDispatcher?.enqueue(deployment.deploymentId);
+    return deployment;
   }
 
   async getStatus(actorKey: string, deploymentId: string): Promise<DeploymentStatusV1> {

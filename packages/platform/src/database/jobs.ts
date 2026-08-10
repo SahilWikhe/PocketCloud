@@ -56,6 +56,7 @@ export class DeploymentJobRepository {
     workerId: string;
     leaseSeconds: number;
     globalConcurrency?: number;
+    deploymentId?: string;
   }): Promise<DeploymentJobRecord | null> {
     const result = await this.sql.query<JobRow>(
       `WITH candidate AS (
@@ -67,6 +68,7 @@ export class DeploymentJobRepository {
            (job.status = 'QUEUED' AND job.available_at <= now())
            OR (job.status = 'CLAIMED' AND job.claim_expires_at <= now())
          )
+         AND ($4::text IS NULL OR deployment.id = $4)
          AND (
            job.attempt < job.max_attempts
            OR deployment.status IN ('READY', 'FAILED', 'CANCELLED')
@@ -106,7 +108,20 @@ export class DeploymentJobRepository {
        FROM candidate
        WHERE job.id = candidate.id
        RETURNING job.*`,
-      [input.workerId, input.leaseSeconds, input.globalConcurrency ?? 3],
+      [
+        input.workerId,
+        input.leaseSeconds,
+        input.globalConcurrency ?? 3,
+        input.deploymentId ?? null,
+      ],
+    );
+    return result.rows[0] ? mapJob(result.rows[0]) : null;
+  }
+
+  async findByDeploymentId(deploymentId: string): Promise<DeploymentJobRecord | null> {
+    const result = await this.sql.query<JobRow>(
+      "SELECT * FROM deployment_jobs WHERE deployment_id = $1",
+      [deploymentId],
     );
     return result.rows[0] ? mapJob(result.rows[0]) : null;
   }

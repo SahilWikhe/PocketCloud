@@ -2,6 +2,13 @@ import { z } from "zod";
 
 import { identifierSchema, isoDateTimeSchema } from "./common";
 
+export const deploymentDispatchV1Schema = z.object({
+  schemaVersion: z.literal(1),
+  deploymentId: identifierSchema,
+});
+
+export type DeploymentDispatchV1 = z.infer<typeof deploymentDispatchV1Schema>;
+
 export const deploymentJobV1Schema = z.object({
   schemaVersion: z.literal(1),
   jobId: identifierSchema,

@@ -9,7 +9,10 @@ import { registerErrorHandler } from "./http/errors";
 import { registerDeploymentRoutes } from "./routes/deployments/routes";
 import { registerOperatorRoutes } from "./routes/operator/routes";
 import { registerUploadRoutes } from "./routes/uploads/routes";
-import { DeploymentService } from "./services/deployments/deployment-service";
+import {
+  DeploymentService,
+  type DeploymentDispatcher,
+} from "./services/deployments/deployment-service";
 import { OperationsService } from "./services/operations/operations-service";
 import { UploadService } from "./services/uploads/upload-service";
 import {
@@ -22,6 +25,7 @@ export interface BuildApiOptions {
   storage: PrivateObjectStorage;
   clientUploadStorage?: ClientUploadStorage;
   actorHashSecret: string;
+  deploymentDispatcher?: DeploymentDispatcher;
   logger?: boolean;
   operator?: {
     apiKey: string;
@@ -39,7 +43,12 @@ export function buildApi(options: BuildApiOptions): FastifyInstance {
   registerErrorHandler(app);
 
   const uploads = new UploadService({ database: options.database, storage: options.storage });
-  const deployments = new DeploymentService({ database: options.database });
+  const deployments = new DeploymentService({
+    database: options.database,
+    ...(options.deploymentDispatcher === undefined
+      ? {}
+      : { deploymentDispatcher: options.deploymentDispatcher }),
+  });
 
   registerUploadRoutes(app, {
     service: uploads,

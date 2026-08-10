@@ -36,11 +36,16 @@ describe("control-plane API", () => {
     await database.close();
   });
 
-  async function upload(appName: string, content: Uint8Array) {
+  async function upload(
+    appName: string,
+    content: Uint8Array,
+    deploymentDispatcher?: { enqueue(deploymentId: string): Promise<void> },
+  ) {
     const app = buildApi({
       database,
       storage,
       actorHashSecret: "test-secret-that-is-long-enough-for-hmac",
+      ...(deploymentDispatcher === undefined ? {} : { deploymentDispatcher }),
     });
     const intentResponse = await app.inject({
       method: "POST",
@@ -67,7 +72,12 @@ describe("control-plane API", () => {
   }
 
   it("completes an immutable upload and creates one idempotent durable job", async () => {
-    const uploaded = await upload("Launch page", new TextEncoder().encode("zip-bytes"));
+    const enqueue = vi.fn(async () => undefined);
+    const uploaded = await upload(
+      "Launch page",
+      new TextEncoder().encode("zip-bytes"),
+      { enqueue },
+    );
 
     const duplicateCompletion = await uploaded.app.inject({
       method: "POST",
@@ -95,6 +105,8 @@ describe("control-plane API", () => {
     const deployment = deploymentCreatedV1Schema.parse(first.json());
     expect(second.json()).toEqual(first.json());
     expect(deployment.status).toBe("QUEUED");
+    expect(enqueue).toHaveBeenNthCalledWith(1, deployment.deploymentId);
+    expect(enqueue).toHaveBeenNthCalledWith(2, deployment.deploymentId);
 
     const statusResponse = await uploaded.app.inject({
       method: "GET",

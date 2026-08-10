@@ -10,21 +10,32 @@
   },
   "scripts": {
     "build": "pnpm --recursive --if-present build",
+    "build:functions": "node scripts/build-vercel-functions.mjs",
+    "build:vercel": "pnpm --filter @pocketcloud/web build && pnpm build:functions",
     "check": "pnpm lint && pnpm typecheck && pnpm test",
     "dev:api": "pnpm --filter @pocketcloud/api dev",
     "dev:web": "pnpm --filter @pocketcloud/web dev",
     "dev:worker": "pnpm --filter @pocketcloud/worker dev",
-    "lint": "eslint apps packages --max-warnings 0",
+    "lint": "eslint api apps packages vercel --max-warnings 0",
     "test": "pnpm --recursive --if-present test",
-    "typecheck": "pnpm --recursive --if-present typecheck"
+    "typecheck": "pnpm --recursive --if-present typecheck && pnpm typecheck:vercel",
+    "typecheck:vercel": "tsc --noEmit -p tsconfig.vercel.json"
   },
   "devDependencies": {
     "@eslint/js": "latest",
     "@types/node": "latest",
+    "esbuild": "0.28.2",
     "eslint": "latest",
     "tsx": "latest",
     "typescript": "6.0.3",
     "typescript-eslint": "latest",
     "vitest": "latest"
+  },
+  "dependencies": {
+    "@pocketcloud/api": "workspace:*",
+    "@pocketcloud/core": "workspace:*",
+    "@pocketcloud/platform": "workspace:*",
+    "@pocketcloud/worker": "workspace:*",
+    "@vercel/queue": "0.4.0"
   }
 }

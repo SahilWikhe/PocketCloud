@@ -7,6 +7,7 @@ import {
   maximumMvpUploadBytes,
   uploadIntentV1Schema,
   type DeploymentState,
+  type DeploymentCreatedV1,
   type DeploymentStatusV1,
 } from "@pocketcloud/core";
 
@@ -72,6 +73,32 @@ async function parseResponse(response: Response): Promise<unknown> {
 
 function wait(milliseconds: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+}
+
+async function createDeployment(
+  apiBaseUrl: string,
+  versionId: string,
+  actorHeaders: Record<string, string>,
+): Promise<DeploymentCreatedV1> {
+  const idempotencyKey = crypto.randomUUID();
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const response = await fetch(`${apiBaseUrl}/v1/deployments`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "idempotency-key": idempotencyKey,
+        ...actorHeaders,
+      },
+      body: JSON.stringify({ schemaVersion: 1, versionId }),
+    });
+    try {
+      return deploymentCreatedV1Schema.parse(await parseResponse(response));
+    } catch (error) {
+      if (!(error instanceof CustomerApiError) || !error.retryable || attempt === 2) throw error;
+      await wait(500 * (attempt + 1));
+    }
+  }
+  throw new Error("Deployment request exhausted its retry budget");
 }
 
 function fallbackProgressMessage(status: DeploymentState): string {
@@ -156,16 +183,7 @@ export class PocketCloudClient implements PocketCloudClientLike {
     completedUploadV1Schema.parse(await parseResponse(completionResponse));
 
     onProgress({ message: "Upload received", deploymentState: "QUARANTINED" });
-    const deploymentResponse = await fetch(`${this.apiBaseUrl}/v1/deployments`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "idempotency-key": crypto.randomUUID(),
-        ...actorHeaders,
-      },
-      body: JSON.stringify({ schemaVersion: 1, versionId: intent.versionId }),
-    });
-    const deployment = deploymentCreatedV1Schema.parse(await parseResponse(deploymentResponse));
+    const deployment = await createDeployment(this.apiBaseUrl, intent.versionId, actorHeaders);
 
     while (true) {
       const statusResponse = await fetch(

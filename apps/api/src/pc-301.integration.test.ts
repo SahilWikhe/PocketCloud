@@ -146,7 +146,7 @@ describe("PC-301 end-to-end deployment flow", () => {
       heartbeatIntervalMilliseconds: 60_000,
     });
 
-    await expect(worker.runOnce()).resolves.toEqual({
+    await expect(worker.runDeployment(deployment.deploymentId)).resolves.toEqual({
       status: "completed",
       deploymentId: deployment.deploymentId,
       publicUrl: verifiedUrl,
