@@ -1,7 +1,7 @@
-import { del, get, head, put } from "@vercel/blob";
+import { del, get, head, issueSignedToken, put } from "@vercel/blob";
 import {
-  handleUpload,
-  type HandleUploadBody,
+  handleUploadPresigned,
+  type HandleUploadPresignedBody,
 } from "@vercel/blob/client";
 import type { IncomingMessage } from "node:http";
 
@@ -36,23 +36,32 @@ export class VercelBlobPrivateObjectStorage implements ClientUploadStorage {
       validUntil: number;
     }>,
   ): Promise<unknown> {
-    return handleUpload({
+    return handleUploadPresigned({
       request: request as Request | IncomingMessage,
-      body: body as HandleUploadBody,
-      ...(this.token === undefined ? {} : { token: this.token }),
-      onBeforeGenerateToken: async (pathname, clientPayload) => {
+      body: body as HandleUploadPresignedBody,
+      getSignedToken: async (pathname, clientPayload) => {
         const authorization = await authorize({ pathname, clientPayload });
         if (authorization.pathname !== pathname) {
           throw new Error("Upload pathname does not match the authorized storage key");
         }
         return {
-          allowedContentTypes: [authorization.contentType],
-          maximumSizeInBytes: authorization.maximumSizeInBytes,
-          validUntil: authorization.validUntil,
-          addRandomSuffix: false,
-          allowOverwrite: false,
-          tokenPayload: authorization.uploadId,
-          cacheControlMaxAge: 60,
+          token: await issueSignedToken({
+            pathname,
+            operations: ["put"],
+            allowedContentTypes: [authorization.contentType],
+            maximumSizeInBytes: authorization.maximumSizeInBytes,
+            validUntil: authorization.validUntil,
+            ...(this.token === undefined ? {} : { token: this.token }),
+          }),
+          urlOptions: {
+            allowedContentTypes: [authorization.contentType],
+            maximumSizeInBytes: authorization.maximumSizeInBytes,
+            validUntil: authorization.validUntil,
+            addRandomSuffix: false,
+            allowOverwrite: false,
+            tokenPayload: authorization.uploadId,
+            cacheControlMaxAge: 60,
+          },
         };
       },
     });

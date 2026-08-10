@@ -1,4 +1,4 @@
-import { upload } from "@vercel/blob/client";
+import { uploadPresigned } from "@vercel/blob/client";
 import {
   completedUploadV1Schema,
   customerErrorResponseV1Schema,
@@ -137,7 +137,7 @@ export class PocketCloudClient implements PocketCloudClientLike {
     const intent = uploadIntentV1Schema.parse(await parseResponse(intentResponse));
 
     onProgress({ message: "Uploading your ZIP", uploadPercentage: 0 });
-    await upload(intent.upload.pathname, file, {
+    await uploadPresigned(intent.upload.pathname, file, {
       access: intent.upload.access,
       handleUploadUrl: `${this.apiBaseUrl}${intent.upload.authorizationUrl}`,
       clientPayload: intent.uploadId,
