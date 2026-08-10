@@ -17,7 +17,8 @@
     "dev:web": "pnpm --filter @pocketcloud/web dev",
     "dev:worker": "pnpm --filter @pocketcloud/worker dev",
     "lint": "eslint api apps packages vercel --max-warnings 0",
-    "test": "pnpm --recursive --if-present test",
+    "test": "pnpm --recursive --if-present test && pnpm test:vercel",
+    "test:vercel": "vitest run vercel/api-path.test.ts && pnpm build:functions && node scripts/test-vercel-function-bundles.mjs",
     "typecheck": "pnpm --recursive --if-present typecheck && pnpm typecheck:vercel",
     "typecheck:vercel": "tsc --noEmit -p tsconfig.vercel.json"
   },

@@ -4,20 +4,20 @@ import { fileURLToPath } from "node:url";
 
 import type { TransactionalSqlExecutor } from "./client";
 
-const migrationsDirectory = fileURLToPath(new URL("../../migrations", import.meta.url));
-
-export async function readMigrations(directory = migrationsDirectory): Promise<readonly {
+export async function readMigrations(directory?: string): Promise<readonly {
   name: string;
   sql: string;
 }[]> {
-  const names = (await readdir(directory))
+  const resolvedDirectory =
+    directory ?? fileURLToPath(new URL("../../migrations", import.meta.url));
+  const names = (await readdir(resolvedDirectory))
     .filter((name) => name.endsWith(".sql"))
     .sort((left, right) => left.localeCompare(right));
 
   return Promise.all(
     names.map(async (name) => ({
       name,
-      sql: await readFile(path.join(directory, name), "utf8"),
+      sql: await readFile(path.join(resolvedDirectory, name), "utf8"),
     })),
   );
 }
