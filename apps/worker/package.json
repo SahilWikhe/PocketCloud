@@ -11,6 +11,7 @@
     "dev": "tsx watch src/main.ts",
     "start": "tsx src/main.ts",
     "test": "vitest run --passWithNoTests",
+    "test:integration:ai": "POCKETCLOUD_RUN_AI_REPAIR_INTEGRATION=1 vitest run src/integration/vercel-ai-repair.integration.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -19,6 +20,7 @@
     "@pocketcloud/execution": "workspace:*",
     "@pocketcloud/normalizer": "workspace:*",
     "@pocketcloud/platform": "workspace:*",
+    "ai": "^7.0.58",
     "zod": "latest"
   }
 }

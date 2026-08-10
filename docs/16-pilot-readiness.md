@@ -31,8 +31,8 @@ private details, signed URLs, or account recovery information.
 |---|---|---|
 | Vercel commercial plan | Confirm the pilot team is on Pro or another commercially appropriate plan | Pending owner confirmation |
 | Vercel spend control | Record the chosen monthly spend amount; enable notifications and the automatic production-pause action at 100% | Pending owner confirmation |
-| OpenAI balance | Confirm prepaid credit is available for the approved pilot budget | Pending owner confirmation |
-| OpenAI recharge | Record auto-recharge as disabled, or record its amount, threshold, and monthly recharge limit | Pending owner confirmation |
+| AI Gateway balance | Confirm the free-tier or purchased Gateway credits available for the approved pilot budget | Pending owner confirmation |
+| AI Gateway top-up | Record auto top-up as disabled, or record its threshold and approved top-up amount | Pending owner confirmation |
 | Live Sandbox | Run the opt-in Vercel Sandbox integration test on approved resources | Pending cost authorization |
 | Live deployment | Run the opt-in Vercel deployment integration test on the pilot project | Pending cost authorization |
 | Live kill switch | Run the opt-in PC-303 test and retain its deployment/action IDs | Pending cost authorization |
@@ -43,9 +43,9 @@ webhooks, and an optional automatic pause action. Merely setting an amount does 
 production unless that action is enabled. See [Vercel Spend Management](https://vercel.com/docs/spend-management)
 and the [Vercel Pro plan](https://vercel.com/docs/plans/pro-plan).
 
-OpenAI documents that prepaid setup enables auto recharge by default; teams that leave it enabled
-can set a recharge amount, threshold, and optional monthly limit. See
-[OpenAI prepaid billing](https://help.openai.com/en/articles/8264644-manage-your-chatgpt-subscription).
+Vercel documents that AI Gateway includes a free monthly credit tier, uses purchased credits for
+paid usage, and leaves auto top-up disabled by default unless the team configures it. See
+[Vercel AI Gateway pricing](https://vercel.com/docs/ai-gateway/pricing).
 
 ## Operational snapshot
 
