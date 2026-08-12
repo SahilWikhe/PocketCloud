@@ -12,6 +12,7 @@
   "dependencies": {
     "@clerk/react": "^6.14.1",
     "@pocketcloud/core": "workspace:*",
+    "@vercel/analytics": "^2.0.1",
     "@vercel/blob": "latest",
     "react": "latest",
     "react-dom": "latest",
