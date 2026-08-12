@@ -61,13 +61,14 @@ fallback.
 Add these in Vercel for Production and Preview:
 
 ```text
-CLERK_SECRET_KEY                 server secret; never expose or commit
-CLERK_PUBLISHABLE_KEY            public Clerk application key for the API
-VITE_CLERK_PUBLISHABLE_KEY       same public key for the Vite browser build
+gopocketcloud_CLERK_SECRET_KEY                       server secret; never expose or commit
+NEXT_PUBLIC_gopocketcloud_CLERK_PUBLISHABLE_KEY      public key for the API and browser build
 ```
 
-If the Vercel Clerk integration creates `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, the code accepts it as
-a public-key fallback. Using the explicit Vite and server names is still clearer.
+The prefixed variables are treated as one pair and take priority so PocketCloud cannot accidentally
+combine credentials from two Clerk projects. Standard `CLERK_SECRET_KEY`,
+`CLERK_PUBLISHABLE_KEY`, `VITE_CLERK_PUBLISHABLE_KEY`, and
+`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` names remain supported as fallbacks.
 
 Run the migration against each selected Neon database before using the new API:
 
