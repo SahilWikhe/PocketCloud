@@ -4,7 +4,11 @@
   "outputDirectory": "apps/web/dist",
   "regions": ["iad1"],
   "rewrites": [
-    { "source": "/v1/:path*", "destination": "/api/v1" }
+    { "source": "/v1/:path*", "destination": "/api/v1" },
+    { "source": "/dashboard", "destination": "/index.html" },
+    { "source": "/sign-in/:path*", "destination": "/index.html" },
+    { "source": "/sign-up/:path*", "destination": "/index.html" },
+    { "source": "/setup-required", "destination": "/index.html" }
   ],
   "functions": {
     "api/v1.js": {

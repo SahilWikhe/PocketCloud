@@ -48,6 +48,120 @@ The two builders should exchange review responsibility: Builder A reviews execut
 | PC-303 | Complete pilot readiness review | Both | M | PC-106, PC-302 | None |
 | PC-304 | Run the control plane on Vercel | A author, B reviewer | L | PC-301, PC-303 software controls | None |
 
+## Product expansion stories
+
+These stories turn the controlled prototype into a customer product. The implementation owner is
+temporarily covering both work lanes, but the one-story branch, contract review, and merge-order
+rules still apply.
+
+| ID | Story | Size | Dependencies |
+|---|---|---:|---|
+| PC-401 | Add accounts, workspaces, landing page, and customer dashboard | L | PC-304 |
+| PC-402 | Add customer delete, suspend, restore, and redeploy controls | L | PC-401 |
+| PC-403 | Add verified custom domains | L | PC-402 |
+| PC-404 | Add plans, Stripe billing, invoices, and spend limits | L | PC-401, PC-402 |
+| PC-405 | Add email and in-product notifications | M | PC-401, PC-402 |
+| PC-406 | Publish retention, privacy, and terms controls | M | PC-401, PC-402, PC-404 |
+
+### PC-401 — Add accounts, workspaces, landing page, and customer dashboard
+
+**User story**
+
+> As a customer, I want a real account and private dashboard so my projects and deployment history
+> remain mine across devices and browser sessions.
+
+**Acceptance criteria**
+
+- A public landing page explains the product, launch flow, and planned pricing.
+- Clerk owns registration, login, sessions, account recovery, and customer password handling.
+- The first signed-in request idempotently creates one PocketCloud user, personal workspace, and
+  owner membership in Neon.
+- Hosted upload and deployment routes derive ownership from the verified session rather than a
+  browser-provided identifier.
+- New apps are attached to the personal workspace.
+- The dashboard shows apps, live links, status, and recent deployment history.
+- Cross-workspace app and deployment access is denied and covered by tests.
+- Existing prototype records are not silently claimed by new accounts.
+
+### PC-402 — Add customer lifecycle controls
+
+**User story**
+
+> As a customer, I want to redeploy, suspend, restore, and delete my own project so I control its
+> public availability and data lifecycle without operator help.
+
+**Acceptance criteria**
+
+- Each action verifies workspace ownership and current state.
+- Redeploy creates a new immutable version or explicitly republishes an approved version.
+- Suspend removes public availability without deleting source history.
+- Restore is explicit and cannot revive an operator-blocked project.
+- Delete is a recoverable soft-delete first, followed by retention-driven provider and artifact
+  cleanup.
+- Actions are idempotent, audited, visible in the dashboard, and covered by race tests.
+
+### PC-403 — Add verified custom domains
+
+**User story**
+
+> As a customer, I want to attach my own domain and receive clear DNS instructions so my project can
+> use a professional address.
+
+**Acceptance criteria**
+
+- Domain ownership is scoped to one workspace and one app.
+- PocketCloud uses the Vercel domain API behind the deployment adapter boundary.
+- The dashboard shows verification records and pending, verified, conflict, and failed states.
+- Removing an app or subscription safely detaches its domain.
+- Domain conflicts never disclose another customer's account or app.
+
+### PC-404 — Add plans, billing, invoices, and spend limits
+
+**User story**
+
+> As a customer, I want transparent plans and hard spend controls so I can pay for PocketCloud
+> without surprise usage charges.
+
+**Acceptance criteria**
+
+- Stripe owns payment details, checkout, invoices, refunds, and the billing portal.
+- Neon stores customer/subscription references, entitlements, usage totals, and webhook audit state.
+- Signed Stripe webhooks are idempotent and authoritative for subscription state.
+- Plan entitlements are enforced server-side before paid provider work begins.
+- A customer may set a hard monthly spend limit; PocketCloud blocks new paid work before exceeding
+  it and clearly explains the block.
+- The dashboard shows plan, usage, invoice access, and the next billing date.
+
+### PC-405 — Add email and in-product notifications
+
+**User story**
+
+> As a customer, I want useful notifications when important actions finish or need attention so I do
+> not have to keep the dashboard open.
+
+**Acceptance criteria**
+
+- Deployment-ready, deployment-failed, domain, billing, and retention notices use durable events.
+- Resend sends transactional email; Neon stores in-product notification state and delivery audit.
+- Delivery is retryable and idempotent, and never blocks a deployment from reaching its terminal
+  state.
+- Customers can manage notification preferences.
+
+### PC-406 — Publish retention, privacy, and terms controls
+
+**User story**
+
+> As a customer, I want clear policies and usable data controls so I understand what PocketCloud
+> stores and can remove my account and projects.
+
+**Acceptance criteria**
+
+- Public privacy, terms, acceptable-use, and retention pages are versioned and linked in product.
+- Sign-up records the accepted policy version and time.
+- Customer delete flows explain recovery windows and final cleanup.
+- Account export and deletion requests are durably tracked.
+- Artifact, deployment, billing, security, and legal retention schedules are explicit and tested.
+
 ## Foundation stories
 
 ### PC-001 — Scaffold the TypeScript monorepo

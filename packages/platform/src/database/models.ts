@@ -15,6 +15,7 @@ export type JobStatus = "QUEUED" | "CLAIMED" | "COMPLETED" | "FAILED" | "CANCELL
 export interface AppRecord {
   id: string;
   actorKey: string;
+  workspaceId: string | null;
   name: string;
   slug: string;
   status: AppStatus;

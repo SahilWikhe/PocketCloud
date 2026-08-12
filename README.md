@@ -4,8 +4,10 @@ PocketCloud is a deployment platform for small, AI-generated applications. Its g
 
 > Current status: the control plane, execution plane, `PC-301` end-to-end composition, and
 > `PC-302` customer presentation matrix are implemented. `PC-304` packages the UI, API, durable
-> queue consumer, and retention job for one Vercel project. `PC-303` billing-owner confirmations
-> and approved live provider tests remain mandatory pilot gates.
+> queue consumer, and retention job for one Vercel project. `PC-401` adds the public landing page,
+> Clerk customer accounts, personal Neon workspaces, and an authenticated project/deployment
+> dashboard. `PC-303` billing-owner confirmations and approved live provider tests remain mandatory
+> pilot gates.
 
 ## Product promise
 
@@ -83,8 +85,9 @@ pnpm build:vercel  # production UI plus bundled Vercel Function entry points
 ```
 
 `DATABASE_URL` must be a pooled Neon PostgreSQL connection string. Vercel Blob must be a
-private store. The API hashes prototype actor identifiers before persistence; raw browser IDs
-and source IPs are not used as durable customer identity.
+private store. Hosted production verifies Clerk sessions and maps each customer to a durable Neon
+workspace. The API's hashed prototype actor exists only for local/test compositions that do not
+install the production identity provider.
 
 The control plane accepts, quarantines, and queues an upload. On Vercel, a private Queue-triggered
 Function claims that exact durable job, connects the public platform and execution interfaces, and
@@ -112,6 +115,7 @@ none are copied into a Sandbox. The standalone worker command remains available 
 16. [Customer success and failure matrix](docs/15-customer-failure-matrix.md)
 17. [Controlled pilot readiness](docs/16-pilot-readiness.md)
 18. [PC-304 Vercel control-plane handoff](docs/17-pc-304-vercel-control-plane.md)
+19. [PC-401 accounts and dashboard handoff](docs/19-pc-401-accounts-dashboard.md)
 
 Codex and other AI coding agents must also follow the repository-wide instructions in [AGENTS.md](AGENTS.md).
 
@@ -134,7 +138,10 @@ For small static applications, the product target is usually under one minute fr
 
 The first release is a controlled prototype, not a universal cloud platform. It accepts a small static-site ZIP, processes it in isolation, applies deterministic and optionally AI-assisted normalization, deploys only the approved normalized output, and returns a public URL.
 
-The MVP intentionally excludes accounts, payments, private team sharing, custom domains, databases for uploaded apps, framework builds, backend runtimes, and multiple cloud providers. The interfaces and data model leave room for those additions.
+The current product includes real customer accounts and personal workspaces. It still excludes
+payments, private team sharing, custom domains, databases for uploaded apps, framework builds,
+backend runtimes, and multiple cloud providers. The interfaces and data model leave room for those
+additions.
 
 ## Source date
 

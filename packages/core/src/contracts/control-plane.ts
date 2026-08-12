@@ -85,6 +85,59 @@ export const deploymentStatusV1Schema = z.object({
   changes: z.array(normalizationChangeV1Schema).readonly(),
 });
 
+export const customerDeploymentSummaryV1Schema = z.object({
+  deploymentId: identifierSchema,
+  appId: identifierSchema,
+  appName: z.string().min(1).max(120),
+  versionId: identifierSchema,
+  status: deploymentStateSchema,
+  publicUrl: z.string().url().nullable(),
+  errorMessage: z.string().min(1).nullable(),
+  createdAt: isoDateTimeSchema,
+  updatedAt: isoDateTimeSchema,
+});
+
+export const customerAppSummaryV1Schema = z.object({
+  appId: identifierSchema,
+  name: z.string().min(1).max(120),
+  slug: z.string().min(1),
+  status: z.enum(["ACTIVE", "SUSPENDED"]),
+  activeVersionId: identifierSchema.nullable(),
+  latestDeployment: z.object({
+    deploymentId: identifierSchema,
+    versionId: identifierSchema,
+    status: deploymentStateSchema,
+    publicUrl: z.string().url().nullable(),
+    createdAt: isoDateTimeSchema,
+    updatedAt: isoDateTimeSchema,
+  }).nullable(),
+  createdAt: isoDateTimeSchema,
+  updatedAt: isoDateTimeSchema,
+});
+
+export const customerSessionV1Schema = z.object({
+  schemaVersion: z.literal(1),
+  user: z.object({
+    userId: identifierSchema,
+    primaryEmail: z.string().email().nullable(),
+    displayName: z.string().min(1).max(120).nullable(),
+  }),
+  workspace: z.object({
+    workspaceId: identifierSchema,
+    name: z.string().min(1).max(120),
+    slug: z.string().min(1),
+    role: z.enum(["OWNER", "ADMIN", "MEMBER", "VIEWER"]),
+    planCode: z.enum(["FREE", "STARTER", "BUSINESS", "ENTERPRISE"]),
+  }),
+});
+
+export const customerDashboardV1Schema = z.object({
+  schemaVersion: z.literal(1),
+  session: customerSessionV1Schema,
+  apps: z.array(customerAppSummaryV1Schema).readonly(),
+  deployments: z.array(customerDeploymentSummaryV1Schema).readonly(),
+});
+
 export const customerErrorResponseV1Schema = z.object({
   error: z.object({
     code: pocketCloudErrorCodeSchema,
@@ -102,4 +155,8 @@ export type CompletedUploadV1 = z.infer<typeof completedUploadV1Schema>;
 export type CreateDeploymentV1 = z.infer<typeof createDeploymentV1Schema>;
 export type DeploymentCreatedV1 = z.infer<typeof deploymentCreatedV1Schema>;
 export type DeploymentStatusV1 = z.infer<typeof deploymentStatusV1Schema>;
+export type CustomerDeploymentSummaryV1 = z.infer<typeof customerDeploymentSummaryV1Schema>;
+export type CustomerAppSummaryV1 = z.infer<typeof customerAppSummaryV1Schema>;
+export type CustomerSessionV1 = z.infer<typeof customerSessionV1Schema>;
+export type CustomerDashboardV1 = z.infer<typeof customerDashboardV1Schema>;
 export type CustomerErrorResponseV1 = z.infer<typeof customerErrorResponseV1Schema>;

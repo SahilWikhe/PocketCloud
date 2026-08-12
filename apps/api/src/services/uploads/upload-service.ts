@@ -63,7 +63,11 @@ export class UploadService {
     this.now = options.now ?? (() => new Date());
   }
 
-  async createIntent(actorKey: string, input: CreateUploadIntentV1): Promise<UploadIntentV1> {
+  async createIntent(
+    actorKey: string,
+    input: CreateUploadIntentV1,
+    workspaceId?: string,
+  ): Promise<UploadIntentV1> {
     const uploadId = this.ids.create("upl");
     const versionId = this.ids.create("ver");
     const plannedArtifactId = this.ids.create("art");
@@ -98,6 +102,7 @@ export class UploadService {
         await apps.create({
           id: appId,
           actorKey,
+          ...(workspaceId === undefined ? {} : { workspaceId }),
           name: input.appName,
           slug: `${slugify(input.appName)}-${appId.slice(-8).toLowerCase()}`,
         });

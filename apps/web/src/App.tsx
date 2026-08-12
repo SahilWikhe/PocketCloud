@@ -59,9 +59,11 @@ function appNameFromFile(file: File): string {
 
 export interface AppProps {
   client?: PocketCloudClientLike;
+  embedded?: boolean;
+  onDeploymentComplete?: () => void;
 }
 
-export function App({ client }: AppProps) {
+export function App({ client, embedded = false, onDeploymentComplete }: AppProps) {
   const api = useMemo(() => client ?? new PocketCloudClient(), [client]);
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -122,6 +124,7 @@ export function App({ client }: AppProps) {
     try {
       const deployment = await api.deploy(file, appName.trim(), setProgress);
       setResult(deployment);
+      onDeploymentComplete?.();
       if (deployment.status !== "READY") {
         setError({
           message: deployment.error?.message ?? "This deployment did not finish successfully.",
@@ -146,17 +149,17 @@ export function App({ client }: AppProps) {
   const activeStep = result?.status === "READY" ? 6 : stepForState(progress.deploymentState);
 
   return (
-    <div className="page-shell">
-      <header className="topbar">
+    <div className={embedded ? "embedded-upload" : "page-shell"}>
+      {!embedded && <header className="topbar">
         <a className="brand" href="/" aria-label="PocketCloud home">
           <span className="brand-mark" aria-hidden="true">P</span>
           <span>PocketCloud</span>
         </a>
         <span className="prototype-pill">Static-site prototype</span>
-      </header>
+      </header>}
 
-      <main className="main-layout">
-        <section className="intro" aria-labelledby="page-title">
+      <main className={embedded ? "embedded-upload-main" : "main-layout"}>
+        {!embedded && <section className="intro" aria-labelledby="page-title">
           <p className="eyebrow">From project folder to public link</p>
           <h1 id="page-title">Share your website without learning the cloud.</h1>
           <p className="lede">
@@ -168,7 +171,7 @@ export function App({ client }: AppProps) {
             <span>Isolated processing</span>
             <span>Original preserved</span>
           </div>
-        </section>
+        </section>}
 
         <section className="workspace-card" aria-label="Deploy a static website">
           <div className="card-heading">
@@ -279,9 +282,9 @@ export function App({ client }: AppProps) {
           )}
         </section>
 
-        <p className="security-note">
+        {!embedded && <p className="security-note">
           PocketCloud applies platform checks and isolation. It does not claim uploaded code is malware-free.
-        </p>
+        </p>}
       </main>
     </div>
   );
