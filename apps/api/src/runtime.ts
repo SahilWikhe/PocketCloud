@@ -22,12 +22,30 @@ function requiredActorHashSecret(): string {
   return value;
 }
 
-function requiredClerkConfiguration(): { secretKey: string; publishableKey: string } {
-  const secretKey = process.env.CLERK_SECRET_KEY;
+export function requiredClerkConfiguration(
+  environment: NodeJS.ProcessEnv = process.env,
+): { secretKey: string; publishableKey: string } {
+  const prefixedSecretKey = environment.gopocketcloud_CLERK_SECRET_KEY;
+  const prefixedPublishableKey =
+    environment.NEXT_PUBLIC_gopocketcloud_CLERK_PUBLISHABLE_KEY;
+  if (prefixedSecretKey || prefixedPublishableKey) {
+    if (!prefixedSecretKey || !prefixedPublishableKey) {
+      throw new Error(
+        "gopocketcloud_CLERK_SECRET_KEY and " +
+          "NEXT_PUBLIC_gopocketcloud_CLERK_PUBLISHABLE_KEY must be configured together",
+      );
+    }
+    return {
+      secretKey: prefixedSecretKey,
+      publishableKey: prefixedPublishableKey,
+    };
+  }
+
+  const secretKey = environment.CLERK_SECRET_KEY;
   const publishableKey =
-    process.env.CLERK_PUBLISHABLE_KEY ??
-    process.env.VITE_CLERK_PUBLISHABLE_KEY ??
-    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+    environment.CLERK_PUBLISHABLE_KEY ??
+    environment.VITE_CLERK_PUBLISHABLE_KEY ??
+    environment.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
   if (!secretKey || !publishableKey) {
     throw new Error(
       "CLERK_SECRET_KEY and CLERK_PUBLISHABLE_KEY (or VITE_CLERK_PUBLISHABLE_KEY) are required",
