@@ -173,6 +173,31 @@ export class DeploymentRepository {
     return result.rows.map(mapDeployment);
   }
 
+  async listLatestForApps(appIds: readonly string[]): Promise<readonly DeploymentRecord[]> {
+    if (appIds.length === 0) return [];
+    const result = await this.sql.query<DeploymentRow>(
+      `SELECT DISTINCT ON (app_id) *
+       FROM deployments
+       WHERE app_id = ANY($1::text[])
+       ORDER BY app_id, created_at DESC, id DESC`,
+      [appIds],
+    );
+    return result.rows.map(mapDeployment);
+  }
+
+  async listByWorkspace(workspaceId: string, limit = 100): Promise<readonly DeploymentRecord[]> {
+    const result = await this.sql.query<DeploymentRow>(
+      `SELECT d.*
+       FROM deployments d
+       JOIN apps a ON a.id = d.app_id
+       WHERE a.workspace_id = $1 AND a.status <> 'DELETED'
+       ORDER BY d.created_at DESC, d.id DESC
+       LIMIT $2`,
+      [workspaceId, limit],
+    );
+    return result.rows.map(mapDeployment);
+  }
+
   async setProviderResult(input: {
     id: string;
     providerProjectId?: string;

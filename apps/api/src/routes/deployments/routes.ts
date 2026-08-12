@@ -4,15 +4,15 @@ import {
   deploymentStatusV1Schema,
   PocketCloudError,
 } from "@pocketcloud/core";
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
 
-import { resolveActorKey } from "../../auth/actor";
+import type { CustomerAccess } from "../uploads/routes";
 import type { DeploymentService } from "../../services/deployments/deployment-service";
 
 export interface DeploymentRoutesOptions {
   service: DeploymentService;
-  actorHashSecret: string;
+  resolveAccess(request: FastifyRequest): Promise<CustomerAccess>;
 }
 
 export function registerDeploymentRoutes(
@@ -29,7 +29,7 @@ export function registerDeploymentRoutes(
         retryable: false,
       });
     }
-    const actorKey = resolveActorKey(request, options.actorHashSecret);
+    const { actorKey } = await options.resolveAccess(request);
     const result = deploymentCreatedV1Schema.parse(
       await options.service.create(actorKey, rawKey, input),
     );
@@ -38,7 +38,7 @@ export function registerDeploymentRoutes(
 
   app.get("/v1/deployments/:deploymentId", async (request, reply) => {
     const parameters = z.object({ deploymentId: z.string().min(1) }).parse(request.params);
-    const actorKey = resolveActorKey(request, options.actorHashSecret);
+    const { actorKey } = await options.resolveAccess(request);
     const result = deploymentStatusV1Schema.parse(
       await options.service.getStatus(actorKey, parameters.deploymentId),
     );

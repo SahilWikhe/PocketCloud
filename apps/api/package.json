@@ -15,6 +15,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@clerk/fastify": "^3.1.64",
     "@pocketcloud/core": "workspace:*",
     "@pocketcloud/deployment": "workspace:*",
     "@pocketcloud/platform": "workspace:*",

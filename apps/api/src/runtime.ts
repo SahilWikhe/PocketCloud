@@ -5,6 +5,7 @@ import {
 } from "@pocketcloud/platform";
 import type { FastifyInstance } from "fastify";
 
+import { ClerkCustomerIdentityProvider } from "./auth/customer";
 import { buildApi } from "./build-app";
 import type { DeploymentDispatcher } from "./services/deployments/deployment-service";
 
@@ -19,6 +20,20 @@ function requiredActorHashSecret(): string {
     throw new Error("ACTOR_HASH_SECRET must contain at least 32 characters");
   }
   return value;
+}
+
+function requiredClerkConfiguration(): { secretKey: string; publishableKey: string } {
+  const secretKey = process.env.CLERK_SECRET_KEY;
+  const publishableKey =
+    process.env.CLERK_PUBLISHABLE_KEY ??
+    process.env.VITE_CLERK_PUBLISHABLE_KEY ??
+    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+  if (!secretKey || !publishableKey) {
+    throw new Error(
+      "CLERK_SECRET_KEY and CLERK_PUBLISHABLE_KEY (or VITE_CLERK_PUBLISHABLE_KEY) are required",
+    );
+  }
+  return { secretKey, publishableKey };
 }
 
 export function buildProductionApi(options: BuildProductionApiOptions = {}): FastifyInstance {
@@ -54,6 +69,8 @@ export function buildProductionApi(options: BuildProductionApiOptions = {}): Fas
     storage,
     clientUploadStorage: storage,
     actorHashSecret: requiredActorHashSecret(),
+    customerIdentity: new ClerkCustomerIdentityProvider(),
+    clerk: requiredClerkConfiguration(),
     logger: options.logger ?? true,
     ...(options.deploymentDispatcher === undefined
       ? {}

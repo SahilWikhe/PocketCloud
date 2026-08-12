@@ -1,3 +1,4 @@
+export * from "./accounts";
 export * from "./apps";
 export * from "./artifacts";
 export * from "./client";

@@ -4,23 +4,29 @@ import {
   uploadIntentV1Schema,
 } from "@pocketcloud/core";
 import type { ClientUploadStorage } from "@pocketcloud/platform";
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
 
-import { resolveActorKey } from "../../auth/actor";
 import type { UploadService } from "../../services/uploads/upload-service";
+
+export interface CustomerAccess {
+  actorKey: string;
+  workspaceId?: string;
+}
 
 export interface UploadRoutesOptions {
   service: UploadService;
   clientUploadStorage?: ClientUploadStorage;
-  actorHashSecret: string;
+  resolveAccess(request: FastifyRequest): Promise<CustomerAccess>;
 }
 
 export function registerUploadRoutes(app: FastifyInstance, options: UploadRoutesOptions): void {
   app.post("/v1/uploads/intents", async (request, reply) => {
     const input = createUploadIntentV1Schema.parse(request.body);
-    const actorKey = resolveActorKey(request, options.actorHashSecret);
-    const result = uploadIntentV1Schema.parse(await options.service.createIntent(actorKey, input));
+    const access = await options.resolveAccess(request);
+    const result = uploadIntentV1Schema.parse(
+      await options.service.createIntent(access.actorKey, input, access.workspaceId),
+    );
     return reply.status(201).send(result);
   });
 
@@ -35,7 +41,7 @@ export function registerUploadRoutes(app: FastifyInstance, options: UploadRoutes
         },
       });
     }
-    const actorKey = resolveActorKey(request, options.actorHashSecret);
+    const { actorKey } = await options.resolveAccess(request);
     const result = await options.clientUploadStorage.handleClientUpload(
       request.raw,
       request.body,
@@ -47,7 +53,7 @@ export function registerUploadRoutes(app: FastifyInstance, options: UploadRoutes
 
   app.post("/v1/uploads/:uploadId/complete", async (request, reply) => {
     const parameters = z.object({ uploadId: z.string().min(1) }).parse(request.params);
-    const actorKey = resolveActorKey(request, options.actorHashSecret);
+    const { actorKey } = await options.resolveAccess(request);
     const result = completedUploadV1Schema.parse(
       await options.service.complete(actorKey, parameters.uploadId),
     );

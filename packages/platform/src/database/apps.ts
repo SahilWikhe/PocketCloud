@@ -5,6 +5,7 @@ import { toIso } from "./models";
 interface AppRow {
   id: string;
   actor_key: string;
+  workspace_id: string | null;
   name: string;
   slug: string;
   status: AppStatus;
@@ -17,6 +18,7 @@ function mapApp(row: AppRow): AppRecord {
   return {
     id: row.id,
     actorKey: row.actor_key,
+    workspaceId: row.workspace_id,
     name: row.name,
     slug: row.slug,
     status: row.status,
@@ -32,14 +34,15 @@ export class AppRepository {
   async create(input: {
     id: string;
     actorKey: string;
+    workspaceId?: string;
     name: string;
     slug: string;
   }): Promise<AppRecord> {
     const result = await this.sql.query<AppRow>(
-      `INSERT INTO apps (id, actor_key, name, slug)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO apps (id, actor_key, workspace_id, name, slug)
+       VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [input.id, input.actorKey, input.name, input.slug],
+      [input.id, input.actorKey, input.workspaceId ?? null, input.name, input.slug],
     );
     return mapApp(result.rows[0]!);
   }
@@ -57,6 +60,16 @@ export class AppRepository {
   async findBySlug(slug: string): Promise<AppRecord | null> {
     const result = await this.sql.query<AppRow>("SELECT * FROM apps WHERE slug = $1", [slug]);
     return result.rows[0] ? mapApp(result.rows[0]) : null;
+  }
+
+  async listByWorkspace(workspaceId: string): Promise<readonly AppRecord[]> {
+    const result = await this.sql.query<AppRow>(
+      `SELECT * FROM apps
+       WHERE workspace_id = $1 AND status <> 'DELETED'
+       ORDER BY updated_at DESC, id`,
+      [workspaceId],
+    );
+    return result.rows.map(mapApp);
   }
 
   async setStatus(id: string, status: AppStatus): Promise<AppRecord | null> {
