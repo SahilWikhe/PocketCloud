@@ -101,8 +101,17 @@ export const customerAppSummaryV1Schema = z.object({
   appId: identifierSchema,
   name: z.string().min(1).max(120),
   slug: z.string().min(1),
-  status: z.enum(["ACTIVE", "SUSPENDED"]),
+  status: z.enum(["ACTIVE", "SUSPENDED", "DELETED"]),
+  suspensionSource: z.enum(["CUSTOMER", "OPERATOR"]).nullable(),
+  recoverableUntil: isoDateTimeSchema.nullable(),
+  availableActions: z.object({
+    redeploy: z.boolean(),
+    suspend: z.boolean(),
+    restore: z.boolean(),
+    delete: z.boolean(),
+  }),
   activeVersionId: identifierSchema.nullable(),
+  liveUrl: z.string().url().nullable(),
   latestDeployment: z.object({
     deploymentId: identifierSchema,
     versionId: identifierSchema,
@@ -113,6 +122,26 @@ export const customerAppSummaryV1Schema = z.object({
   }).nullable(),
   createdAt: isoDateTimeSchema,
   updatedAt: isoDateTimeSchema,
+});
+
+export const customerLifecycleActionSchema = z.enum([
+  "REDEPLOY",
+  "SUSPEND",
+  "RESTORE",
+  "DELETE",
+]);
+
+export const customerAppActionV1Schema = z.object({
+  schemaVersion: z.literal(1),
+  actionId: identifierSchema,
+  appId: identifierSchema,
+  action: customerLifecycleActionSchema,
+  status: z.enum(["PENDING", "COMPLETED", "FAILED"]),
+  appStatus: z.enum(["ACTIVE", "SUSPENDED", "DELETED"]).nullable(),
+  deploymentId: identifierSchema.nullable(),
+  recoverableUntil: isoDateTimeSchema.nullable(),
+  createdAt: isoDateTimeSchema,
+  completedAt: isoDateTimeSchema.nullable(),
 });
 
 export const customerSessionV1Schema = z.object({
@@ -136,6 +165,7 @@ export const customerDashboardV1Schema = z.object({
   session: customerSessionV1Schema,
   apps: z.array(customerAppSummaryV1Schema).readonly(),
   deployments: z.array(customerDeploymentSummaryV1Schema).readonly(),
+  actions: z.array(customerAppActionV1Schema.omit({ schemaVersion: true })).readonly(),
 });
 
 export const customerErrorResponseV1Schema = z.object({
@@ -157,6 +187,8 @@ export type DeploymentCreatedV1 = z.infer<typeof deploymentCreatedV1Schema>;
 export type DeploymentStatusV1 = z.infer<typeof deploymentStatusV1Schema>;
 export type CustomerDeploymentSummaryV1 = z.infer<typeof customerDeploymentSummaryV1Schema>;
 export type CustomerAppSummaryV1 = z.infer<typeof customerAppSummaryV1Schema>;
+export type CustomerLifecycleAction = z.infer<typeof customerLifecycleActionSchema>;
+export type CustomerAppActionV1 = z.infer<typeof customerAppActionV1Schema>;
 export type CustomerSessionV1 = z.infer<typeof customerSessionV1Schema>;
 export type CustomerDashboardV1 = z.infer<typeof customerDashboardV1Schema>;
 export type CustomerErrorResponseV1 = z.infer<typeof customerErrorResponseV1Schema>;

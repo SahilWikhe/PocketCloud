@@ -1,6 +1,6 @@
 import type { SqlExecutor } from "./client";
-import type { AppRecord, AppStatus } from "./models";
-import { toIso } from "./models";
+import type { AppRecord, AppStatus, AppSuspensionSource } from "./models";
+import { toIso, toOptionalIso } from "./models";
 
 interface AppRow {
   id: string;
@@ -9,7 +9,10 @@ interface AppRow {
   name: string;
   slug: string;
   status: AppStatus;
+  suspension_source: AppSuspensionSource | null;
   active_version_id: string | null;
+  deleted_at: string | Date | null;
+  recoverable_until: string | Date | null;
   created_at: string | Date;
   updated_at: string | Date;
 }
@@ -22,7 +25,10 @@ function mapApp(row: AppRow): AppRecord {
     name: row.name,
     slug: row.slug,
     status: row.status,
+    suspensionSource: row.suspension_source,
     activeVersionId: row.active_version_id,
+    deletedAt: toOptionalIso(row.deleted_at),
+    recoverableUntil: toOptionalIso(row.recoverable_until),
     createdAt: toIso(row.created_at),
     updatedAt: toIso(row.updated_at),
   };
@@ -65,17 +71,44 @@ export class AppRepository {
   async listByWorkspace(workspaceId: string): Promise<readonly AppRecord[]> {
     const result = await this.sql.query<AppRow>(
       `SELECT * FROM apps
-       WHERE workspace_id = $1 AND status <> 'DELETED'
+       WHERE workspace_id = $1
+         AND (status <> 'DELETED' OR recoverable_until > now())
        ORDER BY updated_at DESC, id`,
       [workspaceId],
     );
     return result.rows.map(mapApp);
   }
 
-  async setStatus(id: string, status: AppStatus): Promise<AppRecord | null> {
+  async setStatus(
+    id: string,
+    status: AppStatus,
+    suspensionSource?: AppSuspensionSource,
+  ): Promise<AppRecord | null> {
     const result = await this.sql.query<AppRow>(
-      "UPDATE apps SET status = $2, updated_at = now() WHERE id = $1 RETURNING *",
-      [id, status],
+      `UPDATE apps
+       SET status = $2,
+           suspension_source = CASE WHEN $2 = 'SUSPENDED' THEN $3 ELSE NULL END,
+           deleted_at = NULL,
+           recoverable_until = NULL,
+           updated_at = now()
+       WHERE id = $1
+       RETURNING *`,
+      [id, status, suspensionSource ?? null],
+    );
+    return result.rows[0] ? mapApp(result.rows[0]) : null;
+  }
+
+  async softDelete(id: string, recoverableUntil: string): Promise<AppRecord | null> {
+    const result = await this.sql.query<AppRow>(
+      `UPDATE apps
+       SET status = 'DELETED',
+           suspension_source = NULL,
+           deleted_at = now(),
+           recoverable_until = $2::timestamptz,
+           updated_at = now()
+       WHERE id = $1
+       RETURNING *`,
+      [id, recoverableUntil],
     );
     return result.rows[0] ? mapApp(result.rows[0]) : null;
   }

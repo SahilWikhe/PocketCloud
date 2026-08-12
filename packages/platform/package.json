@@ -10,6 +10,7 @@
   "scripts": {
     "build": "tsc --noEmit",
     "db:migrate": "tsx src/database/migrate.ts",
+    "db:migrate:vercel": "tsx src/database/migrate-vercel.ts",
     "test": "vitest run --fileParallelism=false --hookTimeout=30000",
     "typecheck": "tsc --noEmit"
   },

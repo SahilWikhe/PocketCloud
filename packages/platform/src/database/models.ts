@@ -8,6 +8,10 @@ import type {
 } from "@pocketcloud/core";
 
 export type AppStatus = "ACTIVE" | "SUSPENDED" | "DELETED";
+export type AppSuspensionSource = "CUSTOMER" | "OPERATOR";
+export type CustomerAppAction = "REDEPLOY" | "SUSPEND" | "RESTORE" | "DELETE";
+export type CustomerAppActionStatus = "PENDING" | "COMPLETED" | "FAILED";
+export type LifecycleProviderCleanupStatus = "NOT_REQUIRED" | "PENDING" | "COMPLETED" | "FAILED";
 export type ArtifactStatus = "QUARANTINED" | "APPROVED" | "REJECTED" | "DELETED";
 export type UploadIntentStatus = "PENDING" | "COMPLETED" | "EXPIRED" | "REJECTED";
 export type JobStatus = "QUEUED" | "CLAIMED" | "COMPLETED" | "FAILED" | "CANCELLED";
@@ -19,9 +23,29 @@ export interface AppRecord {
   name: string;
   slug: string;
   status: AppStatus;
+  suspensionSource: AppSuspensionSource | null;
   activeVersionId: string | null;
+  deletedAt: string | null;
+  recoverableUntil: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CustomerAppActionRecord {
+  id: string;
+  workspaceId: string;
+  userId: string;
+  appId: string;
+  action: CustomerAppAction;
+  idempotencyKey: string;
+  status: CustomerAppActionStatus;
+  resultingAppStatus: AppStatus | null;
+  deploymentId: string | null;
+  recoverableUntil: string | null;
+  providerCleanupStatus: LifecycleProviderCleanupStatus;
+  failureCode: string | null;
+  createdAt: string;
+  completedAt: string | null;
 }
 
 export interface ArtifactRecord {

@@ -15,9 +15,9 @@ describe("pilot operational metrics", () => {
     database = await createMigratedTestDatabase();
     const now = new Date("2026-08-09T20:00:00.000Z");
     await database.query(
-      `INSERT INTO apps (id, actor_key, name, slug, status) VALUES
-         ('app-suspended', 'actor-1', 'Suspended', 'suspended', 'SUSPENDED'),
-         ('app-active', 'actor-2', 'Active', 'active', 'ACTIVE');
+      `INSERT INTO apps (id, actor_key, name, slug, status, suspension_source) VALUES
+         ('app-suspended', 'actor-1', 'Suspended', 'suspended', 'SUSPENDED', 'OPERATOR'),
+         ('app-active', 'actor-2', 'Active', 'active', 'ACTIVE', NULL);
        INSERT INTO artifacts (
          id, kind, storage_provider, storage_key, sha256, compressed_bytes, status, expires_at
        ) VALUES (

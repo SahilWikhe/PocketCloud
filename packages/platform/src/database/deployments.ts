@@ -173,6 +173,17 @@ export class DeploymentRepository {
     return result.rows.map(mapDeployment);
   }
 
+  async listProviderDeploymentIdsForApp(appId: string): Promise<readonly string[]> {
+    const result = await this.sql.query<{ provider_deployment_id: string }>(
+      `SELECT provider_deployment_id
+       FROM deployments
+       WHERE app_id = $1 AND provider_deployment_id IS NOT NULL
+       ORDER BY created_at`,
+      [appId],
+    );
+    return result.rows.map((row) => row.provider_deployment_id);
+  }
+
   async listLatestForApps(appIds: readonly string[]): Promise<readonly DeploymentRecord[]> {
     if (appIds.length === 0) return [];
     const result = await this.sql.query<DeploymentRow>(
@@ -185,12 +196,25 @@ export class DeploymentRepository {
     return result.rows.map(mapDeployment);
   }
 
+  async listLatestReadyForApps(appIds: readonly string[]): Promise<readonly DeploymentRecord[]> {
+    if (appIds.length === 0) return [];
+    const result = await this.sql.query<DeploymentRow>(
+      `SELECT DISTINCT ON (app_id) *
+       FROM deployments
+       WHERE app_id = ANY($1::text[]) AND status = 'READY' AND public_url IS NOT NULL
+       ORDER BY app_id, created_at DESC, id DESC`,
+      [appIds],
+    );
+    return result.rows.map(mapDeployment);
+  }
+
   async listByWorkspace(workspaceId: string, limit = 100): Promise<readonly DeploymentRecord[]> {
     const result = await this.sql.query<DeploymentRow>(
       `SELECT d.*
        FROM deployments d
        JOIN apps a ON a.id = d.app_id
-       WHERE a.workspace_id = $1 AND a.status <> 'DELETED'
+       WHERE a.workspace_id = $1
+         AND (a.status <> 'DELETED' OR a.recoverable_until > now())
        ORDER BY d.created_at DESC, d.id DESC
        LIMIT $2`,
       [workspaceId, limit],

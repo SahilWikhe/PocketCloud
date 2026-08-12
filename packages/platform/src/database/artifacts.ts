@@ -109,6 +109,32 @@ export class ArtifactRepository {
     );
     return result.rows[0] ? mapArtifact(result.rows[0]) : null;
   }
+
+  async scheduleNormalizedForApp(appId: string, expiresAt: string): Promise<number> {
+    const result = await this.sql.query(
+      `UPDATE artifacts AS artifact
+       SET expires_at = $2::timestamptz
+       FROM app_versions AS version
+       WHERE version.app_id = $1
+         AND version.normalized_artifact_id = artifact.id
+         AND artifact.status <> 'DELETED'`,
+      [appId, expiresAt],
+    );
+    return result.rowCount;
+  }
+
+  async preserveNormalizedForApp(appId: string): Promise<number> {
+    const result = await this.sql.query(
+      `UPDATE artifacts AS artifact
+       SET expires_at = NULL
+       FROM app_versions AS version
+       WHERE version.app_id = $1
+         AND version.normalized_artifact_id = artifact.id
+         AND artifact.status <> 'DELETED'`,
+      [appId],
+    );
+    return result.rowCount;
+  }
 }
 
 interface ArtifactFileRow {

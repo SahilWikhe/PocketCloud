@@ -6,7 +6,8 @@ PocketCloud is a deployment platform for small, AI-generated applications. Its g
 > `PC-302` customer presentation matrix are implemented. `PC-304` packages the UI, API, durable
 > queue consumer, and retention job for one Vercel project. `PC-401` adds the public landing page,
 > Clerk customer accounts, personal Neon workspaces, and an authenticated project/deployment
-> dashboard. `PC-303` billing-owner confirmations and approved live provider tests remain mandatory
+> dashboard. `PC-402` adds audited redeploy, suspend, restore, and recoverable-delete controls.
+> `PC-303` billing-owner confirmations and approved live provider tests remain mandatory
 > pilot gates.
 
 ## Product promise
@@ -83,6 +84,11 @@ pnpm check         # lint, all type checks, and all tests
 pnpm build         # production web build and workspace build checks
 pnpm build:vercel  # production UI plus bundled Vercel Function entry points
 ```
+
+Vercel deployments run pending database migrations before building the application. Neon injects
+the matching connection: a branch database for Preview deployments and the default database for
+Production. Local builds skip this deployment-only migration gate; use `db:migrate` explicitly
+when developing against a chosen database.
 
 `DATABASE_URL` must be a pooled Neon PostgreSQL connection string. Vercel Blob must be a
 private store. Hosted production verifies Clerk sessions and maps each customer to a durable Neon
