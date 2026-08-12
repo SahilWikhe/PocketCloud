@@ -52,6 +52,13 @@ export class SuspensionService {
           retryable: false,
         });
       }
+      if (app.status === "DELETED") {
+        throw new PocketCloudError({
+          code: "CONFLICT",
+          customerMessage: "A deleted app cannot be suspended.",
+          retryable: false,
+        });
+      }
 
       const deployments = new DeploymentRepository(transaction);
       const suspendable = await deployments.listSuspendableForApp(input.appId);
@@ -59,7 +66,7 @@ export class SuspensionService {
         .map((deployment) => deployment.providerDeploymentId)
         .filter((id): id is string => id !== null);
 
-      await apps.setStatus(input.appId, "SUSPENDED");
+      await apps.setStatus(input.appId, "SUSPENDED", "OPERATOR");
       await new DeploymentJobRepository(transaction).cancelForApp(input.appId);
       const events = new DeploymentEventRepository(transaction);
       for (const deployment of suspendable) {
@@ -132,6 +139,13 @@ export class SuspensionService {
         throw new PocketCloudError({
           code: "NOT_FOUND",
           customerMessage: "That app could not be found.",
+          retryable: false,
+        });
+      }
+      if (app.status === "DELETED") {
+        throw new PocketCloudError({
+          code: "CONFLICT",
+          customerMessage: "A deleted app cannot be re-enabled.",
           retryable: false,
         });
       }

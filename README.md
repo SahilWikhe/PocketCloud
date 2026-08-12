@@ -6,7 +6,8 @@ PocketCloud is a deployment platform for small, AI-generated applications. Its g
 > `PC-302` customer presentation matrix are implemented. `PC-304` packages the UI, API, durable
 > queue consumer, and retention job for one Vercel project. `PC-401` adds the public landing page,
 > Clerk customer accounts, personal Neon workspaces, and an authenticated project/deployment
-> dashboard. `PC-303` billing-owner confirmations and approved live provider tests remain mandatory
+> dashboard. `PC-402` adds audited redeploy, suspend, restore, and recoverable-delete controls.
+> `PC-303` billing-owner confirmations and approved live provider tests remain mandatory
 > pilot gates.
 
 ## Product promise

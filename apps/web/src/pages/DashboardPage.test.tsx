@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { CustomerDashboardV1 } from "@pocketcloud/core";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
@@ -34,7 +34,11 @@ const dashboard: CustomerDashboardV1 = {
       name: "Launch site",
       slug: "launch-site",
       status: "ACTIVE",
+      suspensionSource: null,
+      recoverableUntil: null,
+      availableActions: { redeploy: true, suspend: true, restore: false, delete: true },
       activeVersionId: "ver_1",
+      liveUrl: "https://launch-site.vercel.app",
       latestDeployment: {
         deploymentId: "dep_1",
         versionId: "ver_1",
@@ -60,14 +64,16 @@ const dashboard: CustomerDashboardV1 = {
       updatedAt: "2026-08-12T06:01:00.000Z",
     },
   ],
+  actions: [],
 };
 
 describe("customer dashboard", () => {
   it("shows the signed-in customer's projects and deployment history", async () => {
     const getDashboard = vi.fn(async () => dashboard);
+    const manageApp = vi.fn();
     render(
       <MemoryRouter>
-        <DashboardPage client={{ getDashboard }} />
+        <DashboardPage client={{ getDashboard, manageApp }} />
       </MemoryRouter>,
     );
 
@@ -80,5 +86,37 @@ describe("customer dashboard", () => {
       "href", "https://launch-site.vercel.app",
     );
     expect(getDashboard).toHaveBeenCalledOnce();
+  });
+
+  it("runs modular project actions and confirms destructive deletes", async () => {
+    const getDashboard = vi.fn(async () => dashboard);
+    const manageApp = vi.fn(async () => ({
+      schemaVersion: 1 as const,
+      actionId: "caa_1",
+      appId: "app_1",
+      action: "REDEPLOY" as const,
+      status: "COMPLETED" as const,
+      appStatus: "ACTIVE" as const,
+      deploymentId: "dep_2",
+      recoverableUntil: null,
+      createdAt: "2026-08-12T07:00:00.000Z",
+      completedAt: "2026-08-12T07:00:01.000Z",
+    }));
+    render(
+      <MemoryRouter>
+        <DashboardPage client={{ getDashboard, manageApp }} />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "Redeploy" }));
+    await waitFor(() => expect(manageApp).toHaveBeenCalledWith(
+      "app_1",
+      "REDEPLOY",
+      expect.any(String),
+    ));
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    expect(screen.getByRole("button", { name: "Confirm delete" })).toBeInTheDocument();
+    expect(manageApp).toHaveBeenCalledTimes(1);
   });
 });

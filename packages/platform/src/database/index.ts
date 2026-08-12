@@ -2,6 +2,7 @@ export * from "./accounts";
 export * from "./apps";
 export * from "./artifacts";
 export * from "./client";
+export * from "./customer-actions";
 export * from "./changes";
 export * from "./deployments";
 export * from "./events";

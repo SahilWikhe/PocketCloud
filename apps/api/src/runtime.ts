@@ -69,19 +69,18 @@ export function buildProductionApi(options: BuildProductionApiOptions = {}): Fas
       "VERCEL_TOKEN and VERCEL_PROJECT_NAME are required when operator controls are configured",
     );
   }
-  const operatorDeploymentProvider =
-    operatorApiKey === undefined
-      ? undefined
-      : new VercelDeploymentProvider({
-          token: process.env.VERCEL_TOKEN!,
-          projectName: process.env.VERCEL_PROJECT_NAME!,
-          ...(process.env.VERCEL_PROJECT_ID === undefined
-            ? {}
-            : { projectId: process.env.VERCEL_PROJECT_ID }),
-          ...(process.env.VERCEL_TEAM_ID === undefined
-            ? {}
-            : { teamId: process.env.VERCEL_TEAM_ID }),
-        });
+  const deploymentProvider = process.env.VERCEL_TOKEN && process.env.VERCEL_PROJECT_NAME
+    ? new VercelDeploymentProvider({
+        token: process.env.VERCEL_TOKEN,
+        projectName: process.env.VERCEL_PROJECT_NAME,
+        ...(process.env.VERCEL_PROJECT_ID === undefined
+          ? {}
+          : { projectId: process.env.VERCEL_PROJECT_ID }),
+        ...(process.env.VERCEL_TEAM_ID === undefined
+          ? {}
+          : { teamId: process.env.VERCEL_TEAM_ID }),
+      })
+    : undefined;
   const app = buildApi({
     database,
     storage,
@@ -89,6 +88,9 @@ export function buildProductionApi(options: BuildProductionApiOptions = {}): Fas
     actorHashSecret: requiredActorHashSecret(),
     customerIdentity: new ClerkCustomerIdentityProvider(),
     clerk: requiredClerkConfiguration(),
+    ...(deploymentProvider === undefined
+      ? {}
+      : { customerLifecycle: { deploymentProvider } }),
     logger: options.logger ?? true,
     ...(options.deploymentDispatcher === undefined
       ? {}
@@ -98,7 +100,7 @@ export function buildProductionApi(options: BuildProductionApiOptions = {}): Fas
       : {
           operator: {
             apiKey: operatorApiKey,
-            deploymentProvider: operatorDeploymentProvider!,
+            deploymentProvider: deploymentProvider!,
           },
         }),
   });

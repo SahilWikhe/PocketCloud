@@ -1,5 +1,9 @@
 import { UserButton, useUser } from "@clerk/react";
-import type { CustomerDashboardV1, DeploymentState } from "@pocketcloud/core";
+import type {
+  CustomerDashboardV1,
+  CustomerLifecycleAction,
+  DeploymentState,
+} from "@pocketcloud/core";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -25,6 +29,15 @@ function formatDate(value: string): string {
   }).format(new Date(value));
 }
 
+function friendlyAction(action: CustomerLifecycleAction): string {
+  return ({
+    REDEPLOY: "Redeployed",
+    SUSPEND: "Suspended",
+    RESTORE: "Restored",
+    DELETE: "Moved to recovery",
+  } as const)[action];
+}
+
 export interface DashboardPageProps {
   client?: CustomerDashboardClient;
 }
@@ -35,6 +48,9 @@ export function DashboardPage({ client }: DashboardPageProps) {
   const [dashboard, setDashboard] = useState<CustomerDashboardV1 | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [busyAppId, setBusyAppId] = useState<string | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -50,7 +66,22 @@ export function DashboardPage({ client }: DashboardPageProps) {
 
   useEffect(() => { void refresh(); }, [refresh]);
 
-  const liveCount = dashboard?.apps.filter((app) => app.latestDeployment?.status === "READY").length ?? 0;
+  const manage = useCallback(async (appId: string, action: CustomerLifecycleAction) => {
+    try {
+      setActionError(null);
+      setBusyAppId(appId);
+      await dashboardClient.manageApp(appId, action, crypto.randomUUID());
+      setConfirmingDelete(null);
+      await refresh();
+    } catch (caught) {
+      setActionError(caught instanceof Error ? caught.message : "PocketCloud could not update this project.");
+    } finally {
+      setBusyAppId(null);
+    }
+  }, [dashboardClient, refresh]);
+
+  const activeApps = dashboard?.apps.filter((app) => app.status !== "DELETED") ?? [];
+  const liveCount = activeApps.filter((app) => app.liveUrl !== null).length;
   const firstName = user?.firstName ?? dashboard?.session.user.displayName?.split(" ")[0] ?? "there";
 
   return (
@@ -72,9 +103,10 @@ export function DashboardPage({ client }: DashboardPageProps) {
         </section>
 
         {error && <div className="dashboard-error" role="alert"><span>{error}</span><button onClick={() => void refresh()}>Try again</button></div>}
+        {actionError && <div className="dashboard-error" role="alert"><span>{actionError}</span><button onClick={() => setActionError(null)}>Dismiss</button></div>}
 
         <section className="dashboard-stats" aria-label="Workspace summary">
-          <article><span>Projects</span><strong>{dashboard?.apps.length ?? "—"}</strong></article>
+          <article><span>Projects</span><strong>{dashboard ? activeApps.length : "—"}</strong></article>
           <article><span>Live websites</span><strong>{loading ? "—" : liveCount}</strong></article>
           <article><span>Deployments</span><strong>{dashboard?.deployments.length ?? "—"}</strong></article>
           <article><span>Current plan</span><strong>{dashboard?.session.workspace.planCode ?? "—"}</strong></article>
@@ -91,10 +123,40 @@ export function DashboardPage({ client }: DashboardPageProps) {
             {loading ? <p className="empty-state">Loading your projects…</p> : dashboard?.apps.length ? (
               <div className="project-list">
                 {dashboard.apps.map((app) => (
-                  <article key={app.appId}>
+                  <article className={`project-item project-${app.status.toLowerCase()}`} key={app.appId}>
                     <div className="project-avatar">{app.name.slice(0, 1).toUpperCase()}</div>
-                    <div><strong>{app.name}</strong><span>{app.latestDeployment ? friendlyStatus(app.latestDeployment.status) : "Not published yet"}</span></div>
-                    {app.latestDeployment?.publicUrl ? <a href={app.latestDeployment.publicUrl} target="_blank" rel="noreferrer">Open ↗</a> : <span className="muted-action">—</span>}
+                    <div className="project-copy">
+                      <strong>{app.name}</strong>
+                      <span>
+                        {app.status === "DELETED"
+                          ? `Recoverable until ${formatDate(app.recoverableUntil!)}`
+                          : app.suspensionSource === "OPERATOR"
+                            ? "Suspended by PocketCloud"
+                            : app.status === "SUSPENDED"
+                              ? "Suspended by you"
+                              : app.latestDeployment
+                                ? friendlyStatus(app.latestDeployment.status)
+                                : "Not published yet"}
+                      </span>
+                    </div>
+                    <div className="project-actions">
+                      {app.liveUrl && app.status === "ACTIVE" && (
+                        <a href={app.liveUrl} target="_blank" rel="noreferrer">Open ↗</a>
+                      )}
+                      {app.availableActions.redeploy && <button disabled={busyAppId === app.appId} onClick={() => void manage(app.appId, "REDEPLOY")}>Redeploy</button>}
+                      {app.availableActions.suspend && <button disabled={busyAppId === app.appId} onClick={() => void manage(app.appId, "SUSPEND")}>Suspend</button>}
+                      {app.availableActions.restore && <button disabled={busyAppId === app.appId} onClick={() => void manage(app.appId, "RESTORE")}>Restore</button>}
+                      {app.availableActions.delete && confirmingDelete !== app.appId && (
+                        <button className="danger-action" disabled={busyAppId === app.appId} onClick={() => setConfirmingDelete(app.appId)}>Delete</button>
+                      )}
+                      {app.availableActions.delete && confirmingDelete === app.appId && (
+                        <span className="delete-confirmation">
+                          <button className="danger-action" disabled={busyAppId === app.appId} onClick={() => void manage(app.appId, "DELETE")}>Confirm delete</button>
+                          <button disabled={busyAppId === app.appId} onClick={() => setConfirmingDelete(null)}>Cancel</button>
+                        </span>
+                      )}
+                      {!Object.values(app.availableActions).some(Boolean) && app.status !== "ACTIVE" && <span className="muted-action">Contact support</span>}
+                    </div>
                   </article>
                 ))}
               </div>
@@ -117,6 +179,19 @@ export function DashboardPage({ client }: DashboardPageProps) {
               ))}
             </div>
           ) : <p className="empty-state">No deployments yet. Upload a project to start.</p>}
+          {dashboard?.actions.length ? (
+            <div className="management-history">
+              <h3>Project changes</h3>
+              {dashboard.actions.slice(0, 6).map((action) => (
+                <div key={action.actionId}>
+                  <strong>{dashboard.apps.find((app) => app.appId === action.appId)?.name ?? "Project"}</strong>
+                  <span>{friendlyAction(action.action)}</span>
+                  <span>{action.status === "FAILED" ? "Needs attention" : "Complete"}</span>
+                  <time dateTime={action.createdAt}>{formatDate(action.createdAt)}</time>
+                </div>
+              ))}
+            </div>
+          ) : null}
         </section>
       </main>
     </div>

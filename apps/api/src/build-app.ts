@@ -22,6 +22,7 @@ import {
 } from "./services/deployments/deployment-service";
 import { OperationsService } from "./services/operations/operations-service";
 import { DashboardService } from "./services/dashboard/dashboard-service";
+import { CustomerLifecycleService } from "./services/lifecycle/customer-lifecycle-service";
 import { UploadService } from "./services/uploads/upload-service";
 import {
   SuspensionService,
@@ -40,6 +41,9 @@ export interface BuildApiOptions {
     publishableKey: string;
   };
   logger?: boolean;
+  customerLifecycle?: {
+    deploymentProvider: DeploymentRemovalProvider;
+  };
   operator?: {
     apiKey: string;
     deploymentProvider: DeploymentRemovalProvider;
@@ -89,10 +93,20 @@ export function buildApi(options: BuildApiOptions): FastifyInstance {
     resolveAccess,
   });
   if (options.customerIdentity) {
+    const lifecycle = options.customerLifecycle
+      ? new CustomerLifecycleService({
+          database: options.database,
+          deploymentProvider: options.customerLifecycle.deploymentProvider,
+          ...(options.deploymentDispatcher === undefined
+            ? {}
+            : { deploymentDispatcher: options.deploymentDispatcher }),
+        })
+      : undefined;
     registerCustomerRoutes(app, {
       context: customerContext,
       identity: options.customerIdentity,
-      dashboard: new DashboardService(options.database),
+      dashboard: new DashboardService(options.database, lifecycle !== undefined),
+      ...(lifecycle === undefined ? {} : { lifecycle }),
     });
   }
   if (options.operator) {
