@@ -11,7 +11,7 @@
   "scripts": {
     "build": "pnpm --recursive --if-present build",
     "build:functions": "node scripts/build-vercel-functions.mjs",
-    "build:vercel": "pnpm --filter @pocketcloud/web build && pnpm build:functions",
+    "build:vercel": "pnpm --filter @pocketcloud/platform db:migrate:vercel && pnpm --filter @pocketcloud/web build && pnpm build:functions",
     "check": "pnpm lint && pnpm typecheck && pnpm test",
     "dev:api": "pnpm --filter @pocketcloud/api dev",
     "dev:web": "pnpm --filter @pocketcloud/web dev",

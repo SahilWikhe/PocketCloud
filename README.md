@@ -85,6 +85,11 @@ pnpm build         # production web build and workspace build checks
 pnpm build:vercel  # production UI plus bundled Vercel Function entry points
 ```
 
+Vercel deployments run pending database migrations before building the application. Neon injects
+the matching connection: a branch database for Preview deployments and the default database for
+Production. Local builds skip this deployment-only migration gate; use `db:migrate` explicitly
+when developing against a chosen database.
+
 `DATABASE_URL` must be a pooled Neon PostgreSQL connection string. Vercel Blob must be a
 private store. Hosted production verifies Clerk sessions and maps each customer to a durable Neon
 workspace. The API's hashed prototype actor exists only for local/test compositions that do not

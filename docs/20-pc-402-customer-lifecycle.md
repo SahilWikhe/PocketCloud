@@ -105,7 +105,12 @@ No new secret is introduced. Hosted lifecycle controls are enabled when the exis
 `VERCEL_TOKEN` and `VERCEL_PROJECT_NAME` are present; optional `VERCEL_PROJECT_ID` and
 `VERCEL_TEAM_ID` continue to scope provider calls.
 
-After merge, apply the new migration to each selected Neon database before using the controls:
+Vercel applies pending migrations before building the application. The Neon integration injects
+the matching connection, so Preview changes stay isolated and a Production build migrates the
+default branch before the new functions become active. The migration runner serializes concurrent
+builds through its ledger table and remains idempotent.
+
+For a manual or local rollout, apply pending migrations to the selected database explicitly:
 
 ```text
 pnpm --filter @pocketcloud/platform db:migrate
@@ -145,7 +150,7 @@ suspend/delete service boundary before provider deployment removal.
 
 ## Merge order
 
-1. Merge PC-402 after Quality Gate and Vercel Preview pass.
-2. Apply migration `0006_customer_lifecycle.sql` to Production and active Preview databases.
-3. Verify redeploy, suspend, restore, and delete from a Preview customer dashboard.
+1. Confirm Quality Gate and the migration-backed Vercel Preview pass.
+2. Verify redeploy, suspend, restore, and delete from a Preview customer dashboard.
+3. Merge PC-402; the Production deployment applies migration `0006` before activating the code.
 4. Begin PC-403 from the merged `main` branch.
