@@ -1,5 +1,6 @@
 import { ClerkProvider, Show, SignIn, SignUp } from "@clerk/react";
 import { BrowserRouter, Link, Navigate, Route, Routes } from "react-router-dom";
+import { Analytics } from "@vercel/analytics/react";
 
 import { DashboardPage } from "./pages/DashboardPage";
 import { LandingPage } from "./pages/LandingPage";
@@ -64,6 +65,7 @@ export function PocketCloudApplication({ publishableKey }: PocketCloudApplicatio
           <Route path="*" element={<SetupRequiredPage />} />
         </Routes>
       )}
+      <Analytics />
     </BrowserRouter>
   );
 }
