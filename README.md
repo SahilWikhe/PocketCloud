@@ -122,6 +122,8 @@ none are copied into a Sandbox. The standalone worker command remains available 
 17. [Controlled pilot readiness](docs/16-pilot-readiness.md)
 18. [PC-304 Vercel control-plane handoff](docs/17-pc-304-vercel-control-plane.md)
 19. [PC-401 accounts and dashboard handoff](docs/19-pc-401-accounts-dashboard.md)
+20. [PC-402 customer lifecycle handoff](docs/20-pc-402-customer-lifecycle.md)
+21. [Real-project deployment architecture](docs/21-real-project-deployment-architecture.md)
 
 Codex and other AI coding agents must also follow the repository-wide instructions in [AGENTS.md](AGENTS.md).
 

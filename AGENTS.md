@@ -15,6 +15,12 @@ Read, in order:
 
 Then identify the assigned story ID and confirm its dependencies are merged.
 
+Before implementing framework builds, iterative AI repair, customer backends, provisioned
+databases, or other real-project deployment work, also read
+`docs/21-real-project-deployment-architecture.md`. Treat it as the proposed target architecture;
+the static-only implementation boundaries below remain authoritative until an expansion story
+explicitly changes them.
+
 ## One story, one owner, one branch
 
 - Work on exactly one claimed story unless the user explicitly expands the scope.
