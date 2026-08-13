@@ -62,6 +62,7 @@ rules still apply.
 | PC-404 | Add plans, Stripe billing, invoices, and spend limits | L | PC-401, PC-402 |
 | PC-405 | Add email and in-product notifications | M | PC-401, PC-402 |
 | PC-406 | Publish retention, privacy, and terms controls | M | PC-401, PC-402, PC-404 |
+| PC-407 | Define real-project deployment architecture and guardrails | M | PC-304 |
 
 ### PC-401 — Add accounts, workspaces, landing page, and customer dashboard
 
@@ -161,6 +162,30 @@ rules still apply.
 - Customer delete flows explain recovery windows and final cleanup.
 - Account export and deletion requests are durably tracked.
 - Artifact, deployment, billing, security, and legal retention schedules are explicit and tested.
+
+### PC-407 — Define real-project deployment architecture and guardrails
+
+**User story**
+
+> As the product and engineering team, we want one detailed target architecture for deploying
+> real source projects so future coding agents add frameworks, AI repair, backends, databases, and
+> customer resources without weakening the existing trust boundaries or creating incompatible
+> systems.
+
+**Acceptance criteria**
+
+- Current static-only behavior is clearly separated from proposed capabilities.
+- Supported project lanes, end-to-end repair flow, frontend/backend placement, and database
+  allocation are explicit.
+- AI may repair a derived source revision but cannot provision, migrate production, or deploy
+  directly.
+- Package boundaries, dependency direction, provider interfaces, versioned contracts, and
+  idempotency rules preserve the modular-monolith architecture.
+- Secure dependency installation, Sandbox execution, secret handling, migration safety, tenant
+  isolation, abuse controls, and third-party scanner TODOs are documented.
+- Coding, testing, rollout, metering, cleanup, rollback, and per-lane release gates are defined.
+- `docs/21-real-project-deployment-architecture.md` is linked from the documentation map and the
+  repository working agreement routes future real-project stories to it.
 
 ## Foundation stories
 
